@@ -4,7 +4,7 @@ import requests
 
 DATA = '/Users/adityagupta/Desktop/UWA/Data Science/CITS3200 - Professional Computing/WA Police Heatmap/data.csv'
 
-API_KEY = 'AIzaSyB84cidDJ-8rusBSb_VstKUOhdgtY1y0Js'
+API_KEY = ''
 BASE_URL = 'https://maps.googleapis.com/maps/api/geocode/json?'
 
 crime_data = pd.read_csv(DATA)
