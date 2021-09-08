@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
-#UI application display
+# UI application display
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -143,20 +143,29 @@ class Ui_MainWindow(object):
         self.Time_dropdown.setItemText(0, _translate("MainWindow", "time1"))
         self.Time_dropdown.setItemText(1, _translate("MainWindow", "time2"))
 
-
     # redisplays new map based on selectors
     def generate_map(self):
-        # generates new html
+        # get current dropdown options
         '''
         self.Crime_dropdown.currentText
         self.Time_dropdown.currentText
         self.Location_dropdown.currentText
         '''
 
+        # generates new html (placeholder for front end)
+
         # sets new html
         url = QtCore.QUrl.fromLocalFile("/testlayers.html")
         self.webView.load(url)
-    
+
+# Reads csv file from config, outputs a list of names 
+# filename is the name of file
+def readfile(filename):
+    fd = open("./config/"+filename, "r")
+    data = fd.read()
+    fd.close()
+    return data.split(",")
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
