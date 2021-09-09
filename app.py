@@ -10,7 +10,6 @@ class MainWindow(QMainWindow,Ui_MainWindow):
     def __init__(self):
         super(MainWindow,self).__init__()
         self.setupUi(self)
-        self.setting()
         self.showHtml()
         self.search_pushButton_2.clicked.connect(self.back)
         self.spinBox.valueChanged.connect(self.change_table)
