@@ -16,6 +16,39 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.spinBox.valueChanged.connect(self.change_table)
         self.Screenshot_pushButton.clicked.connect(self.screenshot)
 
+        # make Zone and Crime combo boxes searchable
+        self.Station_comboxBox.setEditable(True)
+        self.Station_comboxBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Station_comboxBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.District_comboBox_2.setEditable(True)
+        self.District_comboBox_2.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.District_comboBox_2.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.Region_comboBox_3.setEditable(True)
+        self.Region_comboBox_3.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Region_comboBox_3.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.Type_comboBox_7.setEditable(True)
+        self.Type_comboBox_7.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Type_comboBox_7.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        # initalises combo boxes options from csv in ./config
+        self.Station_comboxBox.addItems(self.readfile("stations.csv"))
+        self.District_comboBox_2.addItems(self.readfile("districts.csv"))
+        self.Region_comboBox_3.addItems(self.readfile("regions.csv"))
+        self.Year_comboBox_6.addItems(self.readfile("years.csv"))
+        MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
+        self.Monthly_comboBox_5.addItems(MONTHS)
+        QUARTERS = ['Jul-Sep','Oct-Dec','Jan-Mar','Apr-Jun'] 
+        self.Quarterly_comboBox_4.addItems(QUARTERS)
+        self.Type_comboBox_7.addItems(self.readfile("crime_types.csv"))
+
+    # Reads csv file from config, outputs a list of names 
+    # filename is the name of file
+    def readfile(self,filename):
+        fd = open("./config/"+filename, "r")
+        data = fd.read()
+        fd.close()
+        return data.split(",")
+
     # Function for Screenshot button    
     def screenshot(self):
         fileName_choose, filetype = QFileDialog.getSaveFileName(self,
@@ -43,72 +76,6 @@ class MainWindow(QMainWindow,Ui_MainWindow):
     def back(self):
         text = self.lineEdit.text()
         print(text.split())
-    
-    # Config for selector dropdown, Initalises combo boxes
-    def setting(self):
-        self.station = ['albany', 'armadale', 'augusta', 'australian federal police', 'australind', 'balgo',
-                        'ballajura', 'bayswater', 'belmont', 'bencubbin', 'beverley', 'bidyadanga', 'blackstone',
-                        'boddington', 'boyup brook', 'bridgetown', 'brookton', 'broome', 'bruce rock', 'bunbury',
-                        'burringurrah', 'busselton', 'canning vale', 'cannington', 'capel', 'carnamah', 'carnarvon',
-                        'clarkson', 'cockburn', 'collie', 'coolgardie', 'corrigin', 'cranbrook', 'cue', 'cunderdin',
-                        'dalwallinu', 'dampier', 'dampier peninsula', 'denmark', 'derby', 'dongara', 'donnybrook',
-                        'dowerin', 'dumbleyung', 'dunsborough', 'dwellingup', 'ellenbrook', 'esperance', 'eucla',
-                        'exmouth', 'fitzroy crossing', 'forrestfield', 'fremantle', 'gascoyne junction', 'geraldton',
-                        'gingin', 'gnowangerup', 'goomalling', 'gosnells', 'halls creek', 'harvey', 'hillarys',
-                        'hopetoun', 'jerramungup', 'jigalong', 'joondalup', 'jurien bay', 'kalbarri', 'kalgoorlie',
-                        'kalumburu', 'kambalda', 'karratha', 'katanning', 'kellerberrin', 'kensington', 'kiara', 'kintore',
-                        'kojonup', 'kondinin', 'koorda', 'kulin', 'kununurra', 'kwinana', 'lake grace', 'lancelin',
-                        'laverton', 'leeman', 'leinster', 'leonora', 'looma', 'mandurah', 'manjimup', 'marble bar',
-                        'margaret river', 'meekatharra', 'menzies', 'merredin', 'midland', 'mingenew', 'mirrabooka',
-                        'moora', 'morawa', 'morley', 'mount barker', 'mount magnet', 'mukinbudin', 'mullewa', 'mundaring',
-                        'mundijong', 'murdoch', 'nannup', 'narembeen', 'narrogin', 'newman', 'norseman', 'northam', 'northampton',
-                        'nullagine', 'onslow', 'palmyra', 'pannawonica', 'paraburdoo', 'pemberton', 'perenjori', 'perth',
-                        'pingelly', 'pinjarra', 'port hedland', 'quairading', 'ravensthorpe', 'rockingham', 'roebourne',
-                        'rottnest', 'scarborough', 'shark bay', 'south hedland', 'southern cross', 'tambellup', 'three springs',
-                        'tom price', 'toodyay', 'unknown', 'wagin', 'walpole', 'wanneroo', 'warakurna', 'warburton',
-                        'warmun', 'waroona', 'warwick', 'wembley', 'wickepin', 'williams', 'wiluna', 'wongan hills',
-                        'wundowie', 'wyalkatchem', 'wyndham', 'yalgoo', 'yanchep', 'yarloop', 'york']
-
-        self.district =  ['armadale', 'cannington', 'external agency access', 'fremantle', 'goldfields-esperance', 'great southern',
-                          'joondalup', 'kimberley', 'mandurah', 'mid west-gascoyne', 'midland', 'mirrabooka', 'perth', 'pilbara',
-                          'south west', 'unknown', 'wheatbelt']
-
-        self.region = ['metropolitan region north', 'metropolitan region south', 'regional wa region', 'rmis business unit', 'unknown']
-
-        self.crime = ['arson', 'assault (family)', 'assault (non-family)', 'breach of violence restraint order', 'deprivation of liberty',
-                      'drug offences', 'dwelling burglary', 'fraud & related offences', 'graffiti', 'homicide', 'non-dwelling burglary',
-                      'property damage', 'robbery', 'sexual offences', 'stealing', 'stealing of motor vehicle', 'threatening behaviour (family)',
-                      'threatening behaviour (non-family)']
-
-        self.year = ['2010-11', '2011-12', '2012-13', '2013-14', '2014-15', '2015-16', '2016-17', '2017-18', '2018-19', '2019-20', '2020-21']
-
-        self.month =  ['jul','aug','sep','oct','nov','dec','jan','feb','mar','apr','may','jun']
-
-        self.quarter = ['jul-sep','oct-dec','jan-mar','apr-jun']
-
-        # make Zone, Crime combo boxes searchable
-        self.Station_comboxBox.setEditable(True)
-        self.Station_comboxBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Station_comboxBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.District_comboBox_2.setEditable(True)
-        self.District_comboBox_2.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.District_comboBox_2.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.Region_comboBox_3.setEditable(True)
-        self.Region_comboBox_3.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Region_comboBox_3.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.Type_comboBox_7.setEditable(True)
-        self.Type_comboBox_7.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Type_comboBox_7.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-
-        # initalises combo boxes
-        self.Station_comboxBox.addItems(self.station)
-        self.District_comboBox_2.addItems(self.district)
-        self.Region_comboBox_3.addItems(self.region)
-        self.Year_comboBox_6.addItems(self.year)
-        self.Monthly_comboBox_5.addItems(self.month)
-        self.Quarterly_comboBox_4.addItems(self.quarter)
-        self.Type_comboBox_7.addItems(self.crime)
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
