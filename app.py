@@ -43,9 +43,9 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.District_comboBox_2.addItems(self.readfile("districts.csv"))
         self.Region_comboBox_3.addItems(self.readfile("regions.csv"))
         self.Year_comboBox_6.addItems(self.readfile("years.csv"))
-        MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
+        MONTHS = ['All','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
         self.Monthly_comboBox_5.addItems(MONTHS)
-        QUARTERS = ['Jul-Sep','Oct-Dec','Jan-Mar','Apr-Jun'] 
+        QUARTERS = ['All','Jul-Sep','Oct-Dec','Jan-Mar','Apr-Jun'] 
         self.Quarterly_comboBox_4.addItems(QUARTERS)
         self.Type_comboBox_7.addItems(self.readfile("crime_types.csv"))
 
@@ -55,8 +55,13 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.cache_year = "All"
         self.cache_period = "All"
         self.cache_crime = "All"
+        self.Station_comboxBox.setCurrentIndex(-1)
+        self.District_comboBox_2.setCurrentIndex(-1)
+        self.Quarterly_comboBox_4.setCurrentIndex(-1)
+        self.Monthly_comboBox_5.setCurrentIndex(-1)
 
         # callback function when dropdown option changed
+        self.update = True #allows dropdown updates, prevents looping updates
         self.Station_comboxBox.currentIndexChanged.connect(lambda : self.generate_map(STATION))
         self.District_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(DISTRICT))
         self.Region_comboBox_3.currentIndexChanged.connect(lambda : self.generate_map(REGION))
@@ -76,31 +81,50 @@ class MainWindow(QMainWindow,Ui_MainWindow):
     
     # redisplays new map based on selectors
     def generate_map(self, src):
-        # update current dropdown options
-        if src == STATION:
-            self.cache_zone_type = "Station"
-            self.cache_zone = self.Station_comboxBox.currentText()
-        elif src == DISTRICT:
-            self.cache_zone_type = "District"
-            self.cache_zone = self.District_comboBox_2.currentText()
-        elif src == REGION:
-            self.cache_zone_type = "Region"
-            self.cache_zone = self.Region_comboBox_3.currentText()
-        elif src == QUARTER:
-            self.cache_period = self.Quarterly_comboBox_4.currentText()
-        elif src == MONTH:
-            self.cache_period = self.Monthly_comboBox_5.currentText()
-        elif src == YEAR:
-            self.cache_year = self.Year_comboBox_6.currentText()
-        elif src == CRIME:
-            self.cache_crime = self.Type_comboBox_7.currentText()
+        if self.update:
+            # update current dropdown options
+            if src == STATION:
+                self.cache_zone_type = "Station"
+                self.cache_zone = self.Station_comboxBox.currentText()
+                self.update = False
+                self.District_comboBox_2.setCurrentIndex(-1)
+                self.Region_comboBox_3.setCurrentIndex(-1)
+                self.update = True
+            elif src == DISTRICT:
+                self.cache_zone_type = "District"
+                self.cache_zone = self.District_comboBox_2.currentText()
+                self.update = False
+                self.Station_comboxBox.setCurrentIndex(-1)
+                self.Region_comboBox_3.setCurrentIndex(-1)
+                self.update = True
+            elif src == REGION:
+                self.cache_zone_type = "Region"
+                self.cache_zone = self.Region_comboBox_3.currentText()
+                self.update = False
+                self.District_comboBox_2.setCurrentIndex(-1)
+                self.Station_comboxBox.setCurrentIndex(-1)
+                self.update = True
+            elif src == QUARTER:
+                self.cache_period = self.Quarterly_comboBox_4.currentText()
+                self.update = False
+                self.Monthly_comboBox_5.setCurrentIndex(-1)
+                self.update = True
+            elif src == MONTH:
+                self.cache_period = self.Monthly_comboBox_5.currentText()
+                self.update = False
+                self.Quarterly_comboBox_4.setCurrentIndex(-1)
+                self.update = True
+            elif src == YEAR:
+                self.cache_year = self.Year_comboBox_6.currentText()
+            elif src == CRIME:
+                self.cache_crime = self.Type_comboBox_7.currentText()
 
-        # generates new html (placeholder for front end)
-        self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
+            # generates new html (placeholder for front end)
+            self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
 
-        # updates html display with new html
-        url = QtCore.QUrl.fromLocalFile("/testlayers.html")
-        self.browser.load(url)
+            # updates html display with new html
+            url = QtCore.QUrl.fromLocalFile("/testlayers.html")
+            self.browser.load(url)
 
     # placeholder, function generates a html based on input query
     def stub(self,name, zone_type, year, period, crime):
