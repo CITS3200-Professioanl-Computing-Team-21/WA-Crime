@@ -20,7 +20,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         super(MainWindow,self).__init__()
         self.setupUi(self)
         self.showHtml()
-        self.search_pushButton_2.clicked.connect(self.back)
+        self.search_pushButton_2.clicked.connect(self.query)
         self.spinBox.valueChanged.connect(self.change_table)
         self.Screenshot_pushButton.clicked.connect(self.screenshot)
 
@@ -155,9 +155,83 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.setStyleSheet(f"font:{self.spinBox.value()}px")
 
     # Search Button
-    def back(self):
-        text = self.lineEdit.text()
-        print(text.split())
+    def query(self):
+        text = self.lineEdit.text().split()
+        print(text)
+        # check num args
+        if (len(text) != 5):
+            print("invalid number of args")
+            return False
+        
+        # checking zone
+        if (text[1] not in ["Station","District","Region"]):
+            print("invalid Zone")
+            return False
+        else:
+            if text[1] == "Station":
+                if (self.Station_comboxBox.findText(text[0]) == -1):
+                    print("invalid Station")
+                    return False
+                else:
+                    self.update = False
+                    self.Station_comboxBox.setCurrentIndex(self.Station_comboxBox.findText(text[0]))
+                    self.update = True
+            elif text[1] == "District":
+                if (self.District_comboBox_2.findText(text[0]) == -1):
+                    print("invalid District")
+                    return False
+                else:
+                    self.update = False
+                    self.District_comboBox_2.setCurrentIndex(self.District_comboBox_2.findText(text[0]))
+                    self.update = True
+            elif text[1] == "Region":
+                if (self.Region_comboBox_3.findText(text[0]) == -1):
+                    print("invalid Region")
+                    return False
+                else:
+                    self.update = False
+                    self.Region_comboBox_3.setCurrentIndex(self.Region_comboBox_3.findText(text[0]))
+                    self.update = True
+        
+        # check year
+        if (self.Year_comboBox_6.findText(text[2]) == -1):
+            print("invalid Year")
+            return False
+        else:
+            self.update = False
+            self.Year_comboBox_6.setCurrentIndex(self.Year_comboBox_6.findText(text[2]))
+            self.update = True
+        
+        #check month/quarter
+        if (self.Monthly_comboBox_5.findText(text[3]) == -1):
+            if (self.Quarterly_comboBox_4.findText(text[3]) == -1):
+                print("invalid number of Period")
+                return False
+            else:
+                self.update = False
+                self.Quarterly_comboBox_4.setCurrentIndex(self.Quarterly_comboBox_4.findText(text[3]))
+                self.update = True
+        else:
+                self.update = False
+                self.Monthly_comboBox_5.setCurrentIndex(self.Monthly_comboBox_5.findText(text[3]))
+                self.update = True
+
+        # check crime
+        if (self.Type_comboBox_7.findText(text[4]) == -1):
+            print("invalid number of Crime")
+            return False
+        else:
+            self.update = False
+            self.Type_comboBox_7.setCurrentIndex(self.Type_comboBox_7.findText(text[4]))
+            self.update = True
+            
+        # generates new html (placeholder for front end)
+        self.stub(text[0], text[1], text[2], text[3], text[4])
+
+        # updates html display with new html
+        url = QtCore.QUrl.fromLocalFile("/testlayers.html")
+        self.browser.load(url)
+        return True
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
