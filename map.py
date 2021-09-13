@@ -7,6 +7,7 @@
 #hti.screenshot(html_file='test.html', save_as='out.png')
 
 #import folium
+import os
 import csv
 import numpy as np
 import pandas as pd
@@ -15,8 +16,13 @@ import geopandas as gpd
 #import scipy as sp
 #import matplotlib.pyplot as plt
 
-def file_prep(datafile, geojson, xlsx):
+def check_text(textfile): #to check if file exists
+    if not os.path.isfile(textfile): 
+        return None
+    else:
+        return True
 
+def file_prep(datafile, geojson, xlsx):
     #prepare csv file
     #consider if filling missing years & crimes is necessary for plotting & analysis
     with open(datafile, 'r') as file:
@@ -97,13 +103,23 @@ def data_input():
     selectors = selector(x.strip().lower(), y.strip().lower(), z.strip().lower())
     return (selectors, output)
 
-def churning_1(data, output, places):
+#def churning_1(data, output, places):
     for place in places:
         count = 0
         for line in data:
             if place == line[0].strip().lower():
                 count += int(line[15])
         output.append([place, count])
+    return output
+
+def churning_1(data, output, places):
+    #for place in places:
+     #   count = 0
+      #  for i in range(0, data.shape[0]):
+            #if place == data.loc[i, 'suburb']:
+                #count += int(data.loc[i, 'annual'])
+       # output.append([place, count])
+    print(data.groupby(['suburb']).sum())
     return output
 
 def churning_2(data, output, locality, crimes, years): #for statistical analysis?
@@ -163,7 +179,7 @@ def churning_8(data, output, locality, offence, date):
     #all,all,all should be the default selectors
     #afterwards should it be every single selector change rerun this function?
     #if so, how to make it a recurring function?
-    if (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date == 'all'):
+    '''if (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date == 'all'):
         for place in places:
             count = 0
             for line in data:
@@ -201,29 +217,34 @@ def churning_8(data, output, locality, offence, date):
     elif (selectors.locality != 'all' and selectors.offence != 'all' and selectors.date != 'all'):
         for line in data:
             if (locality == line[0].strip().lower() and offence == line[1].strip().lower() and date == line[2].strip().lower()):
-                output.append([locality, offence, date, line[15]])
+                output.append([locality, offence, date, line[15]])'''
     #return output
 
 #def churning_10(data, output, places, crimes, years, selectors):
-    return output
-
-#Data = 'WA-Crime\Locality Crime Data.xlsx'
-datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
-geojson = r'C:\Users\seanl\myprojects\CITS3200\GDA2020\Localities_LGATE_234_WA_GDA2020_Public.geojson'
-xlsx = 'Suburb Locality.xlsx'
-
+    #return output
 
 def main():
-    #beginning two lines prepares/checks the files and creates the selector options
+    #Data = 'WA-Crime\Locality Crime Data.xlsx'
+    datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
+    geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
+    xlsx = 'Suburb Locality.xlsx'
+    if check_text(datafile) == None:
+        return None
+    if check_text(geojson) == None:
+        return None
+    if check_text(xlsx) == None:
+        return None
+    #next two lines prepares/checks the files and creates the selector options
     data, gda, localities = file_prep(datafile, geojson, xlsx)
-    places, crimes, dates, months, quarters = selector_options(data)
+    #places, crimes, dates, months, quarters = selector_options(data)
+    print(data.groupby(['suburb'])['annual'].sum())
     #maybe the function just runs through each new iteration of selectors when the selectors are changed on the UI
-    selectors, output = data_input()
+    '''selectors, output = data_input()
     if (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date == 'all'):
         result = churning_1(data, output, places)
     elif (selectors.locality != 'all' and selectors.offence == 'all' and selectors.date == 'all'):
         result= churning_2(data, output, selectors.locality, crimes, dates)
-    '''elif (selectors.locality == 'all' and selectors.offence != 'all' and selectors.date == 'all'):
+    elif (selectors.locality == 'all' and selectors.offence != 'all' and selectors.date == 'all'):
         result = churning_3(data, output, selectors.offence)
     elif (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date != 'all'):
         result = churning_4(data, output, selectors.date)
@@ -234,8 +255,8 @@ def main():
     elif (selectors.locality != 'all' and selectors.offence == 'all' and selectors.date != 'all'):
         result = churning_7(data, output, selectors.locality, selectors.date)
     elif (selectors.locality != 'all' and selectors.offence != 'all' and selectors.date != 'all'):
-        result = churning_8(data, output, selectors.locality, selectors.offence, selectors.date)'''
-    print(result[:5])
+        result = churning_8(data, output, selectors.locality, selectors.offence, selectors.date)
+    print(result[:5])'''
 
 if __name__ == '__main__':
     main()
