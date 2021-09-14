@@ -1,17 +1,9 @@
-#import folium
-#from html2image import Html2Image
-#import matplotlib.pyplot as plt
-#m = folium.Map(location=[-31.9535132, 115.85704710000005], zoom_start=12)
-#m.save('test.html')
-#hti = Html2Image()
-#hti.screenshot(html_file='test.html', save_as='out.png')
-
-#import folium
 import os
 import csv
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+#import folium
 #import seaborn as sns
 #import scipy as sp
 #import matplotlib.pyplot as plt
@@ -43,7 +35,7 @@ def file_prep(datafile, geojson, xlsx):
     gda = init_gda[{'name':init_gda['name'],'geometry':init_gda['geometry']}]
     gda['name'] = gda['name'].str.lower()
 
-    #prepare xlsx file
+    #prepare localities file
     init_xlsx = pd.read_excel(xlsx, sheet_name=None)
     localities = init_xlsx['Sheet1']
     localities_header = np.char.lower(localities.columns.values.astype(str))
@@ -103,160 +95,73 @@ def data_input():
     selectors = selector(x.strip().lower(), y.strip().lower(), z.strip().lower())
     return (selectors, output)
 
-#def churning_1(data, output, places):
-    for place in places:
-        count = 0
-        for line in data:
-            if place == line[0].strip().lower():
-                count += int(line[15])
-        output.append([place, count])
-    return output
-
-def churning_1(data, output, places):
-    #for place in places:
-     #   count = 0
-      #  for i in range(0, data.shape[0]):
-            #if place == data.loc[i, 'suburb']:
-                #count += int(data.loc[i, 'annual'])
-       # output.append([place, count])
-    print(data.groupby(['suburb']).sum())
-    return output
-
-def churning_2(data, output, locality, crimes, years): #for statistical analysis?
-    '''crime, year = pd.core.reshape.util.cartesian_product([crimes, years])
-    df = pd.DataFrame(dict(l = locality, l1=crime, l2=year, l3 = 0))
-    for crime in crimes:
-        for year in years:
-            output.append([locality, crime, year, 0])
-    for out in output:
-        for line in data:
-            if (out[1] == line[1].strip().lower() and out[2] == line[2].strip().lower()):
-                line[3] = line[15]
-    return output, df'''
-    [output.append([locality, data.loc[i, 'website category names'], data.loc[i, 'year'], data.loc[i, 'annual']]) for i in range(0, data.shape[0]) if locality == data.loc[i, 'suburb']]
-    #for i in range(0, data.shape[0]):
-    #    if locality == data.loc[i, 'suburb']:
-    #        output.append([locality, data.loc[i, 'website category names'], data.loc[i, 'year'], data.loc[i, 'annual']])
-    return output
-
-def churning_3(data, output, offence):
-    for line in data:
-        if offence == line[1].strip().lower():
-            output.append([line[0].strip().lower(), offence, line[2].strip().lower(), line[15]])
-    return output
-
-def churning_4(data, output, date):
-    for line in data:
-        if date == line[2].strip().lower():
-            output.append([line[0].strip().lower(), line[1].strip().lower(), date, line[15]])
-    return output
-
-def churning_5(data, output, locality, offence):
-    for line in data:
-        if (locality == line[0].strip().lower() and offence == line[1].strip().lower()):
-            output.append([locality, offence, line[2].strip().lower(), line[15]])
-    return output
-
-def churning_6(data, output, offence, date):
-    for line in data:
-        if (offence == line[1].strip().lower() and date == line[2].strip().lower()):
-            output.append([line[0].strip().lower(), offence, date, line[15]])
-    return output
-
-def churning_7(data, output, locality, date):
-    for line in data:
-        if (locality == line[0].strip().lower() and date == line[2].strip().lower()):
-            output.append([locality, line[1].strip().lower(), date, line[15]])
-    return output
-
-def churning_8(data, output, locality, offence, date):
-    for line in data:
-        if (locality == line[0].strip().lower() and offence == line[1].strip().lower() and date == line[2].strip().lower()):
-            output.append([locality, offence, date, line[15]])
-    return output
-
-#def churning_9(data, output, places, crimes, years, selectors):
+def churning_9(data, output, selectors):
     #all,all,all should be the default selectors
     #afterwards should it be every single selector change rerun this function?
     #if so, how to make it a recurring function?
-    '''if (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date == 'all'):
-        for place in places:
-            count = 0
-            for line in data:
-                if place == line[0].strip().lower():
-                    count += int(line[15])
-        output.append([place, count])
-    elif (selectors.locality != 'all' and selectors.offence == 'all' and selectors.date == 'all'):
-        for crime in crimes:
-            for year in years:
-                output.append([selectors.locality, crime, year, 0])
-        for out in output:
-            for line in data:
-                if (out[1] == line[1].strip().lower() and out[2] == line[2].strip().lower()):
-                    line[3] = line[15]
-    elif (selectors.locality == 'all' and selectors.offence != 'all' and selectors.date == 'all'):
-        for line in data:
-            if offence == line[1].strip().lower():
-                output.append([line[0].strip().lower(), offence, line[2].strip().lower(), line[15]])
-    elif (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date != 'all'):
-        for line in data:
-            if date == line[2].strip().lower():
-                output.append([line[0].strip().lower(), line[1].strip().lower(), date, line[15]])
+    if (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date == 'all'): #initial heatmap
+        #all, all, all
+        ##rethink this area how to make new dataframe with [locality, sum of crimes (regardless of crime and date), coordinates]
+        output = data.groupby(['suburb'])['annual'].sum()
+    elif (selectors.locality != 'all' and selectors.offence == 'all' and selectors.date == 'all'): #for detailed suburb view
+        #locality, all, all
+        temp = data.loc[data['suburb'] == selectors.locality]
+        output = temp.groupby(['suburb', 'website category names', 'year'])['annual'].sum()
+    elif (selectors.locality == 'all' and selectors.offence != 'all' and selectors.date == 'all'): #for overall crime numbers
+        #all, crime, all
+        ##should we consider splitting the sums into individual localities?
+        output = data.groupby(['website category names'])['annual'].sum()
+    elif (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date != 'all'): #for crimes committed over certain year_range
+        #all, all, year_range
+        ##should we consider splitting the sums into individual localities?
+        output = data.groupby(['year'])['annual'].sum()
     elif (selectors.locality != 'all' and selectors.offence != 'all' and selectors.date == 'all'):
-        for line in data:
-            if (locality == line[0].strip().lower() and offence == line[1].strip().lower()):
-                output.append([locality, offence, line[2].strip().lower(), line[15]])
+        #locality, crime, all
+        temp = data.loc[data['suburb'] == selectors.locality]
+        temp1 = temp.loc[temp['website category names'] == selectors.offence]
+        output = temp1[temp1.columns[[0, 1, 2, -1]]]
     elif (selectors.locality == 'all' and selectors.offence != 'all' and selectors.date != 'all'):
-        for line in data:
-            if (offence == line[1].strip().lower() and date == line[2].strip().lower()):
-                output.append([line[0].strip().lower(), offence, date, line[15]])
+        #all, crime, year_range
+        temp = data.loc[data['website category names'] == selectors.offence]
+        temp1 = temp.loc[temp['year'] == selectors.date]
+        output = temp1[temp1.columns[[0, 1, 2, -1]]]
     elif (selectors.locality != 'all' and selectors.offence == 'all' and selectors.date != 'all'):
-        for line in data:
-            if (locality == line[0].strip().lower() and date == line[2].strip().lower()):
-                output.append([locality, line[1].strip().lower(), date, line[15]])
-    elif (selectors.locality != 'all' and selectors.offence != 'all' and selectors.date != 'all'):
-        for line in data:
-            if (locality == line[0].strip().lower() and offence == line[1].strip().lower() and date == line[2].strip().lower()):
-                output.append([locality, offence, date, line[15]])'''
-    #return output
+        #locality, all, year_range
+        temp = data.loc[data['suburb'] == selectors.locality]
+        temp1 = temp.loc[temp['year'] == selectors.date]
+        output = temp1[temp1.columns[[0, 1, 2, -1]]]
+    elif (selectors.locality != 'all' and selectors.offence != 'all' and selectors.date != 'all'): #too specific?
+        #locality, crime, year_range
+        temp = data.loc[data['suburb'] == selectors.locality]
+        temp1 = temp.loc[temp['website category names'] == selectors.offence]
+        temp2 = temp1.loc[temp1['year'] == selectors.date]
+        output = temp2[temp2.columns[[0, 1, 2, -1]]]
+    return output
 
-#def churning_10(data, output, places, crimes, years, selectors):
-    #return output
+#def churning_10(data, output, selectors):
+    #selectors should include [suburb/station/district/region, crime_type, year_range, distribution]
+    ##distribution includes months and quarters
+    ###for year_range and distribution, focus on fixed ranges or explore custom ranges?
+    return output
 
 def main():
     #Data = 'WA-Crime\Locality Crime Data.xlsx'
     datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
     geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
-    xlsx = 'Suburb Locality.xlsx'
+    xlsx_csv = 'Suburb Locality.csv'
     if check_text(datafile) == None:
         return None
     if check_text(geojson) == None:
         return None
-    if check_text(xlsx) == None:
+    if check_text(xlsx_csv) == None:
         return None
-    #next two lines prepares/checks the files and creates the selector options
-    data, gda, localities = file_prep(datafile, geojson, xlsx)
-    #places, crimes, dates, months, quarters = selector_options(data)
-    print(data.groupby(['suburb'])['annual'].sum())
+    #beginning two lines prepares/checks the files and creates the selector options
+    data, gda, localities = file_prep(datafile, geojson, xlsx_csv)
+    places, crimes, dates, months, quarters = selector_options(data)
     #maybe the function just runs through each new iteration of selectors when the selectors are changed on the UI
-    '''selectors, output = data_input()
-    if (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date == 'all'):
-        result = churning_1(data, output, places)
-    elif (selectors.locality != 'all' and selectors.offence == 'all' and selectors.date == 'all'):
-        result= churning_2(data, output, selectors.locality, crimes, dates)
-    elif (selectors.locality == 'all' and selectors.offence != 'all' and selectors.date == 'all'):
-        result = churning_3(data, output, selectors.offence)
-    elif (selectors.locality == 'all' and selectors.offence == 'all' and selectors.date != 'all'):
-        result = churning_4(data, output, selectors.date)
-    elif (selectors.locality != 'all' and selectors.offence != 'all' and selectors.date == 'all'):
-        result = churning_5(data, output, selectors.locality, selectors.offence)
-    elif (selectors.locality == 'all' and selectors.offence != 'all' and selectors.date != 'all'):
-        result = churning_6(data, output, selectors.offence, selectors.date)
-    elif (selectors.locality != 'all' and selectors.offence == 'all' and selectors.date != 'all'):
-        result = churning_7(data, output, selectors.locality, selectors.date)
-    elif (selectors.locality != 'all' and selectors.offence != 'all' and selectors.date != 'all'):
-        result = churning_8(data, output, selectors.locality, selectors.offence, selectors.date)
-    print(result[:5])'''
+    selectors, output = data_input()
+    result = churning_9(data, output, selectors)
+    print(result[:5])
 
 if __name__ == '__main__':
     main()
