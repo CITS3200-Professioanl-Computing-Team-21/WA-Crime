@@ -19,8 +19,8 @@ Selectors based on selector.doc, adjustable via ./config csv
 v 2.0 (implemented functionailities of v1.5)\
 Features: functional features of v1.5, searchable dropdown, adjustable dropdown from config csv, cross dropdown interaction
 - .ui file from v1.5
-- app.py -> py file used by PyQT designer
-- ui.py -> run this for application
+- app.py -> run this for application
+- ui.py -> py file used by PyQT designer
 
 v 1.5 (skeleton)\
 Features: UI layout with selectors based on selector.doc (from backend team), direct search query, adjustable font size, export jpg
