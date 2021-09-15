@@ -14,7 +14,7 @@ def check_text(textfile): #to check if file exists
     else:
         return True
 
-def file_prep(datafile, geojson, xlsx):
+def file_prep(datafile, geojson, xlsx_csv):
     #prepare csv file
     #consider if filling missing years & crimes is necessary for plotting & analysis
     with open(datafile, 'r') as file:
@@ -29,6 +29,7 @@ def file_prep(datafile, geojson, xlsx):
     data.columns = headers
     data['suburb'] = data['suburb'].str.lower()
     data['website category names'] = data['website category names'].str.lower()
+    data = data.apply(pd.to_numeric, errors='ignore')
 
     #prepare geojson file
     init_gda = gpd.read_file(geojson)
@@ -36,12 +37,11 @@ def file_prep(datafile, geojson, xlsx):
     gda['name'] = gda['name'].str.lower()
 
     #prepare localities file
-    init_xlsx = pd.read_excel(xlsx, sheet_name=None)
-    localities = init_xlsx['Sheet1']
+    localities = pd.read_csv(xlsx_csv)
     localities_header = np.char.lower(localities.columns.values.astype(str))
     localities.columns = localities_header
-    for category in localities_header:
-        localities[category] = localities[category].str.lower()
+    for header in localities_header:
+        localities[header] = localities[header].str.lower()
 
     return (data, gda.sort_values(by='name'), localities)
 
@@ -145,7 +145,6 @@ def churning_9(data, output, selectors):
     return output
 
 def main():
-    #Data = 'WA-Crime\Locality Crime Data.xlsx'
     datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
     geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
     xlsx_csv = 'Suburb Locality.csv'
@@ -161,7 +160,7 @@ def main():
     #maybe the function just runs through each new iteration of selectors when the selectors are changed on the UI
     selectors, output = data_input()
     result = churning_9(data, output, selectors)
-    print(result[:5])
+    print(dates)
 
 if __name__ == '__main__':
     main()
