@@ -5,7 +5,9 @@ import json
 import haversine as hs
 from fuzzywuzzy import process
 from shapely.geometry import Point, shape
+from shapely.ops import unary_union
 from os.path import join
+import geopandas as gpd
 from geopy.geocoders import Nominatim
 
 DATA = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
@@ -20,7 +22,6 @@ def check_file(file): #to check if file exists
         return True
 
 def data_loading(crime, landgate, zones):
-    
     with open(LANDGATE) as f:
         landgate_data = json.load(f)
         landgate_locations = [i['properties']['name'].lower() for i in landgate_data['features']]
@@ -39,76 +40,97 @@ def data_loading(crime, landgate, zones):
 
     return (landgate_data, landgate_locations, crime_locations, zones_data, zones)
 
-def missing_locations(landgate_locations, crime_locations, zones, zones_data):
+def check_naming(zones_data, landgate_locations, crime_locations):
     zones_suburbs = np.char.lower(zones_data['SUB_TXT'].unique().astype('str'))
-    zones_stations = np.char.lower(zones_data['STATION'].unique().astype('str'))
     for location in crime_locations:
         missing1 = [location for location in crime_locations if location not in zones_suburbs]
         missing2 = [location for location in crime_locations if location not in landgate_locations]
-    if not missing1:
-        if missing2:
-            station_coordinates = {}
-            for station in zones_stations:
-                # calling the Nominatim tool
-                loc = Nominatim(user_agent="GetLoc") 
-                # entering the location name
-                getLoc = loc.geocode(station+', WA, Australia')
-                station_coordinates[station] = (getLoc.latitude, getLoc.longitude)
-            missing_landgate = {}
-            for location in missing2:
-                # calling the Nominatim tool
-                loc = Nominatim(user_agent="GetLoc") 
-                # entering the location name
-                getLoc = loc.geocode(location+', WA, Australia')
-                if getLoc:
-                    missing_point = (getLoc.latitude, getLoc.longitude)
-                    station_coordinate = station_coordinates[zones[location]['station']]
-                    if hs.haversine(missing_point, station_coordinate) <= 200:
-                        missing_landgate[location] = {
-                            'coordinates': missing_point,
-                            'station': zones[location]['station'],
-                            'district': zones[location]['district'],
-                            'region': zones[location]['region']
-                        }
-                    else: print('>200', location)
-                else : print('not found', location)
-        missing3 = [i for i in list(missing_landgate.keys())]
-
-    return (missing3, missing_landgate)
-
-def assign_missing_boundaries(missing3, missing_landgate, landgate_locations, crime_locations, landgate_data):
     changes = []
-    for location in missing3:
-        highest = process.extractOne(location, landgate_locations)
-        landgate_location, score = highest[0], highest[1]
-        if landgate_location not in crime_locations and score > 85:
-            changes.append((location, landgate_location))
-            missing3.remove(location)
+    if not missing1:
+        if missing2: 
+            for location in missing2:
+                highest = process.extractOne(location, landgate_locations)
+                landgate_location, score = highest[0], highest[1]
+                if landgate_location not in crime_locations and score > 85:
+                    changes.append((location, landgate_location))
+                    missing2.remove(location)
+    return (missing2, changes)
 
+def missing_locations(zones, zones_data, missing2):
+    zones_stations = np.char.lower(zones_data['STATION'].unique().astype('str'))
+    station_coordinates = {}
+    for station in zones_stations:
+        # calling the Nominatim tool
+        loc = Nominatim(user_agent="GetLoc") 
+        # entering the location name
+        getLoc = loc.geocode(station+', WA, Australia')
+        station_coordinates[station] = (getLoc.latitude, getLoc.longitude)
+    missing_landgate = {}
+    for location in missing2:
+        # calling the Nominatim tool
+        loc = Nominatim(user_agent="GetLoc") 
+        # entering the location name
+        getLoc = loc.geocode(location+', WA, Australia')
+        if getLoc:
+            missing_point = (getLoc.latitude, getLoc.longitude)
+            station_coordinate = station_coordinates[zones[location]['station']]
+            if hs.haversine(missing_point, station_coordinate) <= 200:
+                missing_landgate[location] = {
+                    'coordinates': missing_point,
+                    'station': zones[location]['station'],
+                    'district': zones[location]['district'],
+                    'region': zones[location]['region']
+                }
+            else: print('>200', location)
+        else : print('not found', location)
+
+    return (missing_landgate)
+
+def assign_missing_boundaries(missing_landgate, landgate_data, changes, crime_locations):
     for location in missing_landgate:
         point = Point(missing_landgate[location]['coordinates'][1], missing_landgate[location]['coordinates'][0])
         for i in landgate_data['features']:
             polygon = shape(i['geometry'])
             landgate_location = i['properties']['name'].lower()
-            if polygon.contains(point):
+            if polygon.contains(point) and landgate_location not in crime_locations:
                 changes.append((location, landgate_location))
     return (changes)
 
-# def zoning_boundaries(changes):
-# from shapely.ops import cascaded_union
-# polygons = [poly1[0], poly1[1], poly2[0], poly2[1]]
-# boundary = gpd.GeoSeries(cascaded_union(polygons))
-# boundary.plot(color = 'red')
-# plt.show()
+def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_locations):
+    final_data = {'suburbs': {}, 'stations': {}, 'districts': {}, 'regions': {}}
+    missing = [location for location in crime_locations if location not in landgate_locations]
+    for i in landgate_data['features']:
+        name = i['properties']['name'].lower()
+        if name in crime_locations and name not in missing:
+            polygon = shape(i['geometry'])
+            final_data['suburbs'][name] = zones[name]
+            final_data['suburbs'][name]['coordinates'] = polygon
+    
+    polygons = []
+    for i in final_data['suburbs']:
+        polygons.append(final_data['suburbs'][i]['coordinates'])
+    boundary = gpd.GeoSeries(unary_union(polygons).simplify(tolerance=0.001))
+
+    return(final_data, boundary)
+    
+    # m = folium.Map(location=[-32, 116],
+    #        zoom_start=12,
+    #        tiles='https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    #        attr='Trial Heatmap')
+    # geo_j = boundary.to_json()
+    # folium.GeoJson(geo_j).add_to(m)
+    # m.save('test.html')
 
 def main():
     for file in files:
         if check_file(file) == None:
             return None
     landgate_data, landgate_locations, crime_locations, zones_data, zones = data_loading(DATA, LANDGATE, ZONES)
-    missing3, missing_landgate = missing_locations(landgate_locations, crime_locations, zones, zones_data)
-    changes = assign_missing_boundaries(missing3, missing_landgate, landgate_locations, crime_locations, landgate_data)
-    print(changes)
+    missing2, changes = check_naming(zones_data, landgate_locations, crime_locations)
+    missing_landgate = missing_locations(zones, zones_data, missing2)
+    changes = assign_missing_boundaries(missing_landgate, landgate_data, changes, crime_locations)
+    final_data = zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_locations)
+    print(final_data)
 
 if __name__ == '__main__':
     main()
