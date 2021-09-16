@@ -32,9 +32,10 @@ def data_loading(crime, landgate, zones):
     # zones_suburbs = np.char.lower(zones_data['SUB_TXT'].unique().astype('str'))
     zones = {}
     for index, row in zones_data.iterrows():
-        zones[row[0]]['station'] = row[1].lower()
-        zones[row[0]]['district'] = row[2].lower()
-        zones[row[0]]['region'] = row[3].lower()
+        zones[row[0].lower()] = {
+            'station': row[1].lower(), 
+            'district': row[2].lower(), 
+            'region': row[3].lower()}
 
     return (landgate_data, landgate_locations, crime_locations, zones_data, zones)
 
@@ -59,14 +60,18 @@ def missing_locations(landgate_locations, crime_locations, zones, zones_data):
                 loc = Nominatim(user_agent="GetLoc") 
                 # entering the location name
                 getLoc = loc.geocode(location+', WA, Australia')
-                missing_point = (getLoc.latitude, getLoc.longitude)
-                station_coordinate = station_coordinates[zones[location]['station']]
-                if hs.haversine(missing_point, station_coordinate) <= 200:
-                    missing_landgate[location]['coordinates'] = missing_point
-                    missing_landgate[location]['station'] = zones[location]['station']
-                    missing_landgate[location]['district'] = zones[location]['district']
-                    missing_landgate[location]['region'] = zones[location]['region']
-                else: print(location)
+                if getLoc:
+                    missing_point = (getLoc.latitude, getLoc.longitude)
+                    station_coordinate = station_coordinates[zones[location]['station']]
+                    if hs.haversine(missing_point, station_coordinate) <= 200:
+                        missing_landgate[location] = {
+                            'coordinates': missing_point,
+                            'station': zones[location]['station'],
+                            'district': zones[location]['district'],
+                            'region': zones[location]['region']
+                        }
+                    else: print('>200', location)
+                else : print('not found', location)
         missing3 = [i for i in list(missing_landgate.keys())]
 
     return (missing3, missing_landgate)
@@ -81,7 +86,7 @@ def assign_missing_boundaries(missing3, missing_landgate, landgate_locations, cr
             missing3.remove(location)
 
     for location in missing_landgate:
-        point = Point(missing_landgate[location]['coordinates'][0], missing_landgate[location]['coordinates'][1])
+        point = Point(missing_landgate[location]['coordinates'][1], missing_landgate[location]['coordinates'][0])
         for i in landgate_data['features']:
             polygon = shape(i['geometry'])
             landgate_location = i['properties']['name'].lower()
@@ -89,10 +94,7 @@ def assign_missing_boundaries(missing3, missing_landgate, landgate_locations, cr
                 changes.append((location, landgate_location))
     return (changes)
 
-def zoning_boundaries(changes):
-
-
-
+# def zoning_boundaries(changes):
 # from shapely.ops import cascaded_union
 # polygons = [poly1[0], poly1[1], poly2[0], poly2[1]]
 # boundary = gpd.GeoSeries(cascaded_union(polygons))
@@ -106,6 +108,7 @@ def main():
     landgate_data, landgate_locations, crime_locations, zones_data, zones = data_loading(DATA, LANDGATE, ZONES)
     missing3, missing_landgate = missing_locations(landgate_locations, crime_locations, zones, zones_data)
     changes = assign_missing_boundaries(missing3, missing_landgate, landgate_locations, crime_locations, landgate_data)
+    print(changes)
 
 if __name__ == '__main__':
     main()
