@@ -95,7 +95,7 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
     for zone_type in zones:
         if zone_type != 'suburbs':
             for location in zones[zone_type]:
-                boundary_locations = list(zones_data.loc[zones_data[zone_type] == place, 'suburbs'])
+                boundary_locations = list(zones_data.loc[zones_data[zone_type] == location, 'suburbs'])
                 boundary_locations_landgate = []
                 for i in boundary_locations:
                     if i in landgate_locations:
