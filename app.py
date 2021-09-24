@@ -4,7 +4,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5 import QtWidgets, QtCore
-from ui import Ui_MainWindow
+from ui  import Ui_MainWindow
 
 # BUTTON IDENTIFIERS
 STATION = 0
@@ -21,7 +21,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.setupUi(self)
         self.showHtml()
         self.search_pushButton_2.clicked.connect(self.query)
-        self.spinBox.valueChanged.connect(self.change_table)
+
         self.Screenshot_pushButton.clicked.connect(self.screenshot)
 
         # make Zone and Crime combo boxes searchable
@@ -37,17 +37,56 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Type_comboBox_7.setEditable(True)
         self.Type_comboBox_7.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
         self.Type_comboBox_7.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        #new add
+        self.Suburb_comboxBox_2.setEditable(True)
+        self.Suburb_comboxBox_2.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Suburb_comboxBox_2.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        self.Year_comboBox_6.setEditable(True)
+        self.Year_comboBox_6.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Year_comboBox_6.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        self.Year_comboBox_7.setEditable(True)
+        self.Year_comboBox_7.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Year_comboBox_7.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        self.Monthly_comboBox_5.setEditable(True)
+        self.Monthly_comboBox_5.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Monthly_comboBox_5.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        self.Monthly_comboBox_6.setEditable(True)
+        self.Monthly_comboBox_6.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Monthly_comboBox_6.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        self.Quarterly_comboBox_4.setEditable(True)
+        self.Quarterly_comboBox_4.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Quarterly_comboBox_4.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        self.Quarterly_comboBox_5.setEditable(True)
+        self.Quarterly_comboBox_5.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Quarterly_comboBox_5.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+    ##################################################
 
         # initalises combo boxes options from csv in ./config
         self.Station_comboxBox.addItems(self.readfile("stations.csv"))
         self.District_comboBox_2.addItems(self.readfile("districts.csv"))
         self.Region_comboBox_3.addItems(self.readfile("regions.csv"))
         self.Year_comboBox_6.addItems(self.readfile("years.csv"))
-        MONTHS = ['All','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
+        #new add
+        self.Year_comboBox_7.addItems(self.readfile("years.csv"))
+
+        MONTHS = ['All     ','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
         self.Monthly_comboBox_5.addItems(MONTHS)
-        QUARTERS = ['All','Jul-Sep','Oct-Dec','Jan-Mar','Apr-Jun'] 
+        #new add
+        self.Monthly_comboBox_6.addItems(MONTHS)
+
+        QUARTERS = ['All','Jul-Sep ','Oct-Dec','Jan-Mar','Apr-Jun']
         self.Quarterly_comboBox_4.addItems(QUARTERS)
+        #new add
+        self.Quarterly_comboBox_5.addItems(QUARTERS)
+
         self.Type_comboBox_7.addItems(self.readfile("crime_types.csv"))
+
 
         # inital configuration
         self.cache_zone_type = "Region"
@@ -58,7 +97,11 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Station_comboxBox.setCurrentIndex(-1)
         self.District_comboBox_2.setCurrentIndex(-1)
         self.Quarterly_comboBox_4.setCurrentIndex(-1)
+        self.Quarterly_comboBox_5.setCurrentIndex(-1)
         self.Monthly_comboBox_5.setCurrentIndex(-1)
+        self.Monthly_comboBox_6.setCurrentIndex(-1)
+        self.Year_comboBox_6.setCurrentIndex(-1)
+        self.Year_comboBox_7.setCurrentIndex(-1)
 
         # callback function when dropdown option changed
         self.update = True #allows dropdown updates, prevents looping updates
@@ -150,9 +193,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         hboxlayout = QHBoxLayout(self.frame)
         hboxlayout.addWidget(self.browser)
 
-    # Changes the font of UI
-    def change_table(self):
-        self.setStyleSheet(f"font:{self.spinBox.value()}px")
+
 
     # Search Button
     def query(self):
