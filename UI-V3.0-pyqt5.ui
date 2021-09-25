@@ -164,7 +164,10 @@
            </size>
           </property>
           <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
+           <enum>Qt::WheelFocus</enum>
+          </property>
+          <property name="editable">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -266,7 +269,7 @@
            </size>
           </property>
           <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
+           <enum>Qt::WheelFocus</enum>
           </property>
          </widget>
         </item>
@@ -316,7 +319,7 @@
            </size>
           </property>
           <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
+           <enum>Qt::WheelFocus</enum>
           </property>
          </widget>
         </item>
@@ -366,7 +369,7 @@
            </size>
           </property>
           <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
+           <enum>Qt::WheelFocus</enum>
           </property>
          </widget>
         </item>
@@ -416,7 +419,7 @@
            </size>
           </property>
           <property name="focusPolicy">
-           <enum>Qt::NoFocus</enum>
+           <enum>Qt::WheelFocus</enum>
           </property>
          </widget>
         </item>

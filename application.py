@@ -24,23 +24,6 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Search_pushButton.clicked.connect(self.query)
         self.Screenshot_pushButton.clicked.connect(self.screenshot)
 
-        # make Zone and Crime combo boxes searchable
-        self.Station_comboxBox.setEditable(True)
-        self.Station_comboxBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Station_comboxBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.District_comboBox.setEditable(True)
-        self.District_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.District_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.Region_comboBox.setEditable(True)
-        self.Region_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Region_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.Suburb_comboBox.setEditable(True)
-        self.Suburb_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Suburb_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.Crime_comboBox.setEditable(True)
-        self.Crime_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Crime_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-
         # initalises combo boxes options from csv in ./config
         self.Station_comboxBox.addItems(self.readfile("stations.csv"))
         self.District_comboBox.addItems(self.readfile("districts.csv"))
@@ -70,6 +53,23 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Quarterly_comboBox_2.setCurrentIndex(-1)
         self.Monthly_comboBox_1.setCurrentIndex(-1)
         self.Monthly_comboBox_2.setCurrentIndex(-1)
+
+        # make Zone and Crime combo boxes searchable
+        self.Station_comboxBox.setEditable(True)
+        self.Station_comboxBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Station_comboxBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.District_comboBox.setEditable(True)
+        self.District_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.District_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.Region_comboBox.setEditable(True)
+        self.Region_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Region_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.Suburb_comboBox.setEditable(True)
+        self.Suburb_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Suburb_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.Crime_comboBox.setEditable(True)
+        self.Crime_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Crime_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
 
         # callback function when dropdown option changed
         self.update = True #allows dropdown updates, prevents looping updates
@@ -101,6 +101,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.update = False
                 self.District_comboBox.setCurrentIndex(-1)
                 self.Region_comboBox.setCurrentIndex(-1)
+                self.Suburb_comboBox.setCurrentIndex(-1)
                 self.update = True
             elif src == DISTRICT:
                 self.cache_zone_type = "District"
@@ -108,6 +109,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.update = False
                 self.Station_comboxBox.setCurrentIndex(-1)
                 self.Region_comboBox.setCurrentIndex(-1)
+                self.Suburb_comboBox.setCurrentIndex(-1)
                 self.update = True
             elif src == REGION:
                 self.cache_zone_type = "Region"
@@ -115,6 +117,15 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.update = False
                 self.District_comboBox.setCurrentIndex(-1)
                 self.Station_comboxBox.setCurrentIndex(-1)
+                self.Suburb_comboBox.setCurrentIndex(-1)
+                self.update = True
+            elif src == SUBURB:
+                self.cache_zone_type = "Suburb"
+                self.cache_zone = self.Suburb_comboBox.currentText()
+                self.update = False
+                self.District_comboBox.setCurrentIndex(-1)
+                self.Station_comboxBox.setCurrentIndex(-1)
+                self.Region_comboBox.setCurrentIndex(-1)
                 self.update = True
             elif src == QUARTER:
                 self.cache_period = self.Quarterly_comboBox_1.currentText()
