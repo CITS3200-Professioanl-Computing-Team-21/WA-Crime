@@ -239,6 +239,7 @@
           </property>
           <property name="font">
            <font>
+            <family>MS Sans Serif</family>
             <pointsize>-1</pointsize>
             <weight>50</weight>
             <italic>false</italic>
@@ -811,22 +812,6 @@
       </item>
      </layout>
     </item>
-    <item row="0" column="1">
-     <widget class="QFrame" name="frame">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::Box</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="2">
      <layout class="QVBoxLayout" name="verticalLayout_6">
       <item>
@@ -1115,6 +1100,22 @@
        </spacer>
       </item>
      </layout>
+    </item>
+    <item row="0" column="1">
+     <widget class="QFrame" name="frame">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::Box</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

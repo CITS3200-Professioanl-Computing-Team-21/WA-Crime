@@ -14,6 +14,7 @@ YEAR = 3
 MONTH = 4
 QUARTER = 5
 CRIME = 6
+SUBURB = 7
 
 class MainWindow(QMainWindow,Ui_MainWindow):
     def __init__(self):
@@ -33,6 +34,9 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Region_comboBox.setEditable(True)
         self.Region_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
         self.Region_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.Suburb_comboxBox.setEditable(True)
+        self.Suburb_comboxBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Suburb_comboxBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
         self.Crime_comboBox.setEditable(True)
         self.Crime_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
         self.Crime_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
@@ -41,12 +45,13 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Station_comboxBox.addItems(self.readfile("stations.csv"))
         self.District_comboBox.addItems(self.readfile("districts.csv"))
         self.Region_comboBox.addItems(self.readfile("regions.csv"))
+        self.Suburb_comboxBox.addItems(self.readfile("suburbs.csv"))
         self.Year_comboBox_1.addItems(self.readfile("years.csv"))
         self.Year_comboBox_2.addItems(self.readfile("years.csv"))
         MONTHS = ['All','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
         self.Monthly_comboBox_1.addItems(MONTHS)
         self.Monthly_comboBox_2.addItems(MONTHS)
-        QUARTERS = ['All','Jul-Sep','Oct-Dec','Jan-Mar','Apr-Jun'] 
+        QUARTERS = ['All','Q3','Q4','Q1','Q2'] 
         self.Quarterly_comboBox_1.addItems(QUARTERS)
         self.Quarterly_comboBox_2.addItems(QUARTERS)
         self.Crime_comboBox.addItems(self.readfile("crime_types.csv"))
@@ -59,6 +64,8 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.cache_crime = "All"
         self.Station_comboxBox.setCurrentIndex(-1)
         self.District_comboBox.setCurrentIndex(-1)
+        self.Suburb_comboxBox.setCurrentIndex(-1)
+        self.Year_comboBox_2.setCurrentIndex(-1)
         self.Quarterly_comboBox_1.setCurrentIndex(-1)
         self.Quarterly_comboBox_2.setCurrentIndex(-1)
         self.Monthly_comboBox_1.setCurrentIndex(-1)
@@ -66,13 +73,14 @@ class MainWindow(QMainWindow,Ui_MainWindow):
 
         # callback function when dropdown option changed
         self.update = True #allows dropdown updates, prevents looping updates
-        self.Station_comboxBox.currentIndexChanged.connect(lambda : self.generate_map(STATION))
-        self.District_comboBox.currentIndexChanged.connect(lambda : self.generate_map(DISTRICT))
-        self.Region_comboBox.currentIndexChanged.connect(lambda : self.generate_map(REGION))
-        self.Quarterly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(QUARTER))
-        self.Monthly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(MONTH))
-        self.Year_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(YEAR))
         self.Crime_comboBox.currentIndexChanged.connect(lambda : self.generate_map(CRIME))
+        self.Region_comboBox.currentIndexChanged.connect(lambda : self.generate_map(REGION))
+        self.District_comboBox.currentIndexChanged.connect(lambda : self.generate_map(DISTRICT))
+        self.Station_comboxBox.currentIndexChanged.connect(lambda : self.generate_map(STATION))
+        self.Suburb_comboxBox.currentIndexChanged.connect(lambda : self.generate_map(SUBURB))
+        self.Year_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(YEAR))
+        self.Monthly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(MONTH))
+        self.Quarterly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(QUARTER))
 
     # Reads csv file from config, outputs a list of names 
     # filename is the name of file
@@ -160,7 +168,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
 
     # Search Button
     def query(self):
-        text = self.lineEdit.text().split()
+        text = self.Search_Box.text().split()
         print(text)
         # check num args
         if (len(text) != 5):
@@ -168,7 +176,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             return False
         
         # checking zone
-        if (text[1] not in ["Station","District","Region"]):
+        if (text[1] not in ["Station","District","Region","Suburb"]):
             print("invalid Zone")
             return False
         else:
@@ -194,9 +202,18 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     return False
                 else:
                     self.update = False
-                    self.Region_comboBox.setCurrentIndex(self.Region_comboBox.findText(text[0]))
+                    self.Region_comboBox.setCurrentIndex(self.Suburb_comboBox.findText(text[0]))
+                    self.update = True
+            elif text[1] == "Suburb":
+                if (self.Suburb_comboBox.findText(text[0]) == -1):
+                    print("invalid Suburb")
+                    return False
+                else:
+                    self.update = False
+                    self.Suburb_comboBox.setCurrentIndex(self.Suburb_comboBox.findText(text[0]))
                     self.update = True
         
+        ''' #waiting on specifications before implementing error checking
         # check year
         if (self.Year_comboBox_1.findText(text[2]) == -1):
             print("invalid Year")
@@ -205,7 +222,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             self.update = False
             self.Year_comboBox_1.setCurrentIndex(self.Year_comboBox_1.findText(text[2]))
             self.update = True
-        
+
         #check month/quarter
         if (self.Monthly_comboBox_1.findText(text[3]) == -1):
             if (self.Quarterly_comboBox_1.findText(text[3]) == -1):
@@ -219,7 +236,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.update = False
                 self.Monthly_comboBox_1.setCurrentIndex(self.Monthly_comboBox_1.findText(text[3]))
                 self.update = True
-
+        '''
         # check crime
         if (self.Crime_comboBox.findText(text[4]) == -1):
             print("invalid number of Crime")
@@ -228,12 +245,12 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             self.update = False
             self.Crime_comboBox.setCurrentIndex(self.Crime_comboBox.findText(text[4]))
             self.update = True
-            
+
         # generates new html (placeholder for front end)
         self.stub(text[0], text[1], text[2], text[3], text[4])
 
         # updates html display with new html
-        url = QtCore.QUrl.fromLocalFile("/testlayers.html")
+        url = QtCore.QUrl.fromLocalFile("/stations.html")
         self.browser.load(url)
         return True
 
