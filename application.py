@@ -79,8 +79,11 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Station_comboxBox.currentIndexChanged.connect(lambda : self.generate_map(STATION))
         self.Suburb_comboBox.currentIndexChanged.connect(lambda : self.generate_map(SUBURB))
         self.Year_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(YEAR))
+        self.Year_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(YEAR))
         self.Monthly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(MONTH))
+        self.Monthly_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(MONTH))
         self.Quarterly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(QUARTER))
+        self.Quarterly_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(QUARTER))
 
     # Reads csv file from config, outputs a list of names 
     # filename is the name of file
@@ -129,16 +132,24 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.update = True
             elif src == QUARTER:
                 self.cache_period = self.Quarterly_comboBox_1.currentText()
+                if self.Quarterly_comboBox_2.currentIndex() != -1:
+                    self.cache_period += "-"+self.Quarterly_comboBox_2.currentText()
                 self.update = False
                 self.Monthly_comboBox_1.setCurrentIndex(-1)
+                self.Monthly_comboBox_2.setCurrentIndex(-1)
                 self.update = True
             elif src == MONTH:
                 self.cache_period = self.Monthly_comboBox_1.currentText()
+                if self.Monthly_comboBox_2.currentIndex() != -1:
+                    self.cache_period += "-"+self.Monthly_comboBox_2.currentText()
                 self.update = False
                 self.Quarterly_comboBox_1.setCurrentIndex(-1)
+                self.Quarterly_comboBox_2.setCurrentIndex(-1)
                 self.update = True
             elif src == YEAR:
                 self.cache_year = self.Year_comboBox_1.currentText()
+                if self.Year_comboBox_2.currentIndex() != -1:
+                    self.cache_year += "-"+self.Year_comboBox_2.currentText()
             elif src == CRIME:
                 self.cache_crime = self.Crime_comboBox.currentText()
 
@@ -146,7 +157,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
 
             # updates html display with new html
-            url = QtCore.QUrl.fromLocalFile("/testlayers.html")
+            url = QtCore.QUrl.fromLocalFile("/regions.html")
             self.browser.load(url)
 
     # placeholder, function generates a html based on input query
