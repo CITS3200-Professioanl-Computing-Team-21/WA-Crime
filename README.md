@@ -10,7 +10,7 @@ depre -> past versions of application
 - Direct search via query
 - Save as map as jpg
 Selectors based on selector2.doc, adjustable via ./config csv
-- Zone selectors for Station, District, Region
+- Zone selectors for Suburb, Station, District, Region
 - Time selectors Year, Month, Quarter
 - Crime selector
 - Selectors respond to other selected options
@@ -50,5 +50,8 @@ v 0.5\
 - PyQt html display.py -> input folium html file, displayed in PyQt application
 
 # HTML files used for testing
+districts.html\
+regions.html\
+stations.html\
 testlayer.html\
 testpin.html\
