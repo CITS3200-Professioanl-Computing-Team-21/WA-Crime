@@ -402,7 +402,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="Suburb_comboxBox">
+         <widget class="QComboBox" name="Suburb_comboBox">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
