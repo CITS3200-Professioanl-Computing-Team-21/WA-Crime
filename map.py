@@ -31,6 +31,7 @@ def file_prep(datafile, geojson, xlsx_csv, coordinates):
     data.columns = headers
     data['suburb'] = data['suburb'].str.lower()
     data['website category names'] = data['website category names'].str.lower()
+    data = data.rename(columns = {'annual': 'sum'})
     data = data.apply(pd.to_numeric, errors='ignore')
 
     #prepare geojson file
@@ -55,20 +56,6 @@ def file_prep(datafile, geojson, xlsx_csv, coordinates):
 
     return (data, gda.sort_values(by='name'), localities, boundaries)
 
-def selector_options(data):
-    #making a list of places
-    places = data['suburb'].tolist()
-    #making a list for the crimes occurred
-    crimes = data['website category names'].drop_duplicates().tolist()
-    #making a list of all the dates
-    years = data['year'].drop_duplicates().sort_values().tolist()
-    #Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec -> ignore this for now
-    #Jul, Aug, Sep, Oct, Nov, Dec, Jan, Feb, Mar, Apr, May, Jun -> focus on this
-    #with months, 2d arrays?
-    months = [['jul'],['aug'],['sep'],['oct'],['nov'],['dec'],['jan'],['feb'],['mar'],['apr'],['may'],['jun']]
-    quarters = [['jul-sep'],['oct-dec'],['jan-mar'],['apr-jun']]
-    return places, crimes, years, months, quarters
-
 def selector_options_expanded(data, localities):
     #making a list of places
     places = ['all'] + data['suburb'].drop_duplicates().tolist()
@@ -88,18 +75,6 @@ def selector_options_expanded(data, localities):
     #q1 == jul + aug + sep, q2 == oct + nov + dec, q3 == jan + feb + mar, q4 == apr + may + jun
     distribution = ['all', 'jul','aug','sep','oct','nov','dec','jan','feb','mar','apr','may', 'jun', 'q1', 'q2', 'q3', 'q4']
     return places, types, suburb, station, district, region, crimes, years, distribution
-
-def data_input():
-    class selector:
-
-        def __init__(self, locality, offence, date):
-            self.locality = locality
-            self.offence = offence
-            self.date = date
-    
-    x,y,z = input('{} {} {}').split(',')
-    selectors = selector(x.strip().lower(), y.strip().lower(), z.strip().lower())
-    return selectors
 
 def data_input_extended():
     #class localities:
@@ -134,7 +109,7 @@ def data_input_extended():
     return selectors
 
 
-#def churning_initial(data, selectors):
+def churning_initial(data, selectors):
     #all,all,all should be the default selectors
     #afterwards should it be every single selector change rerun this function?
     #if so, how to make it a recurring function?
@@ -195,6 +170,23 @@ def churning_simplified(data, places, selectors):
         output = pd.DataFrame({'suburb': places, 'sum': list(output)})
     return output
 
+def churning_further_simplified(suburbs_cut, suburbs_list, selectors):
+    #all,all,all should be the default selectors
+    #afterwards should it be every single selector change rerun this function?
+    #if so, how to make it a recurring function?
+    output = suburbs_cut[suburbs_cut.columns[[0, 1, 2, -1]]]
+    if selectors.offence != 'all' or selectors.year != 'all':
+        if selectors.offence != 'all':
+            output = output.loc[output['website category names'] == selectors.offence]
+        if selectors.year != 'all':
+            output = output.loc[output['year'] == selectors.year]
+    elif (selectors.offence == 'all' and selectors.year == 'all'): #initial heatmap
+        #all, all, all
+        ##rethink this area how to make new dataframe with [locality, sum of crimes (regardless of crime and date), coordinates]
+        output = output.groupby(['suburb'])['sum'].sum()
+        output = pd.DataFrame({'name': suburbs_list, 'sum': list(output)})
+    return output
+
 def churning_complicated(data, places, years, distribution, selectors):
     #['jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'q1', 'q2', 'q3', 'q4']
     col_num = np.array([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
@@ -204,7 +196,6 @@ def churning_complicated(data, places, years, distribution, selectors):
     years_list = []
     col_list = []
     output = data.rename(columns = {'annual': 'sum'})
-    print(output)
     initial = [0, 1, 2]
     q0 = []
     q1 = [3, 4, 5]
@@ -253,14 +244,63 @@ def churning_complicated(data, places, years, distribution, selectors):
     [col_list.append(distribution[i]) for i in col_num]
     output['sum'] = output[col_list].sum(axis=1)
     output = output[output.columns[[0, 1, 2, -1]]]
+    
+    return output
 
-    '''group data by zone type
-    if year not 'all':
-        filter out invalid years
-    if distribution not 'all'
-        filter out invalid months and quarters
-    if offence not 'all':
-        filter out invalid offence'''
+def churning_further_complicated(suburbs_cut, suburbs_list, years, distribution, selectors):
+    #['jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'q1', 'q2', 'q3', 'q4']
+    col_num = np.array([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+    places = suburbs_list
+    years = years[1:]
+    distribution = distribution[1:]
+    years_list = []
+    col_list = []
+    output = suburbs_cut
+    initial = [0, 1, 2]
+    q0 = []
+    q1 = [3, 4, 5]
+    q2 = [6, 7, 8]
+    q3 = [9, 10, 11]
+    q4 = [12, 13, 14]
+
+    if selectors.year != all:
+        temp1, temp2 = selectors.year.split('-')
+        temp1 = str(int(temp1[-2:]) + 1)
+        [years_list.append(i) for i in years if (temp1 <= i[-2:] and i[-2:] <= temp2)]
+        output = output[output['year'].isin(years_list)]
+
+    if selectors.distribution != 'all':
+        if '-' in selectors.distribution:
+            temp1, temp2 = selectors.distribution.split('-')
+            if 'q' in temp1:
+                temp = range(locals()[temp1][0], locals()[temp2][-1] + 1)
+                [q0.append(i) for i in temp]
+            elif 'q' not in temp1:
+                temp = distribution[distribution.index(temp1):distribution.index(temp2) + 1]
+                [q0.append(distribution.index(i) + 3) for i in temp]
+        elif selectors.distribution == 'q1':
+            q0 = q1
+        elif selectors.distribution == 'q2':
+            q0 = q2
+        elif selectors.distribution == 'q3':
+            q0 = q3
+        elif selectors.distribution == 'q4':
+            q0 = q4
+        elif len(list(selectors.distribution)) == 3:
+            q0 = [distribution.index(selectors.distribution) + 3]
+        output = output[output.columns[initial + q0]]
+
+    if selectors.offence != 'all':
+        output = output.loc[output['website category names'] == selectors.offence]
+    elif selectors.offence == 'all':
+        ##rethink this area how to make new dataframe with [locality, sum of crimes (regardless of crime and date), coordinates]
+        output = output.groupby(['suburb'])['annual'].sum()
+        output = pd.DataFrame({'name': places, 'sum': list(output)})
+
+    col_num = np.array(q0) - 3
+    [col_list.append(distribution[i]) for i in col_num]
+    output['sum'] = output[col_list].sum(axis=1)
+    output = output[output.columns[[0, 1, 2, -1]]]
     
     return output
 
@@ -269,10 +309,20 @@ def churning_expanded(data, places, years, distribution, selectors):
     ##distribution includes months and quarters
     ###for year_range and distribution, focus on fixed ranges or explore custom ranges?
     if selectors.year not in years or selectors.distribution != 'all':
-        output = churning_complicated(data, places, years, distribution, selectors)
+        result = churning_complicated(data, places, years, distribution, selectors)
     elif selectors.year in years and selectors.distribution == 'all':
-        output = churning_simplified(data, places, selectors)
-    return output
+        result = churning_simplified(data, places, selectors)
+    return result
+
+def churning_further_expanded(suburbs_cut, suburbs_list, years, distribution, selectors):
+    #selectors should include [suburb/station/district/region, crime_type, year_range, distribution]
+    ##distribution includes months and quarters
+    ###for year_range and distribution, focus on fixed ranges or explore custom ranges?
+    if selectors.year not in years or selectors.distribution != 'all':
+        result = churning_further_complicated(suburbs_cut, suburbs_list, years, distribution, selectors)
+    elif selectors.year in years and selectors.distribution == 'all':
+        result = churning_further_simplified(suburbs_cut, suburbs_list, selectors)
+    return result
 
 def png_plots():
     #time series analysis
@@ -308,8 +358,10 @@ def main():
     places, types, suburb, station, district, region, crimes, years, distribution = selector_options_expanded(data, localities)
 
     #maybe the function just runs through each new iteration of selectors when the selectors are changed on the UI
-    #selectors = data_input()
     selectors = data_input_extended()
+    suburbs_data = localities.loc[localities[selectors.locality] == selectors.name]
+    suburbs_list = suburbs_data['sub_txt'].drop_duplicates().sort_values().tolist()
+    suburbs_cut = data[data['suburb'].isin(suburbs_list)]
     '''if (selectors.locality not in types and selectors.name not in locals()[selectors.locality]):
         return None
     if selectors.year not in years:
@@ -324,18 +376,19 @@ def main():
     #after filtering, sum according to distribution and years where necessary
     #after sum, grab coordinates from boundaries to complete the variable
 
-    #result = churning_simplified(data, places, selectors)
     ##start classifying based on specific localities and names
-    result = churning_expanded(data, places, years, distribution, selectors)
+    #result = churning_expanded(data, places, years, distribution, selectors)
+    result = churning_further_expanded(suburbs_cut, suburbs_list, years, distribution, selectors)
 
-    print(result)
+    columns = result['suburb'].drop_duplicates().sort_values().tolist()
+    sums = list(result.groupby(['suburb'])['sum'].sum())
+    final_df = pd.DataFrame({'name':columns, 'sum':sums})
+    final_df = final_df.set_index('name').reindex(suburbs_list).reset_index()
+    final_df['sum'] = final_df['sum'].fillna(0)
+    final_df = final_df.astype(int, errors='ignore')
+    print(final_df)
 
-    '''print(data.shape)
-    print(localities.shape)
-    print(len(boundaries['suburbs']))
-    print(len(boundaries['stations']))
-    print(len(boundaries['districts']))
-    print(len(boundaries['regions']))'''
+    return final_df
 
     #return ****.html, statistical_info
 
