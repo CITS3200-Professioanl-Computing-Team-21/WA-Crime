@@ -2,6 +2,9 @@
 # Sean, Aditya, Zak
 
 # Versions
+v 2.5\
+- map.py -> script able to query different localities types
+
 v 2.0\
 - map.py -> script modified to handle selectors2.docx queries
 
