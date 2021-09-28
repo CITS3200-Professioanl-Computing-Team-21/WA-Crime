@@ -2,6 +2,9 @@
 # Sean, Aditya, Zak
 
 # Versions
+v 2.0\
+-map.py -> script modified to handle selectors2.docx queries
+
 v 1.5\
 - map.py -> redone and optimised the script for future changes
 - api.py -> collects coordinates for suburbs online
