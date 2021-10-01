@@ -2,6 +2,9 @@
 # Sean, Aditya, Zak
 
 # Versions
+V 2.6\
+- map.py -> script able to query 'all' selectors
+
 v 2.5\
 - map.py -> script able to query different localities types
 
