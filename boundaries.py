@@ -9,6 +9,8 @@ from shapely.ops import unary_union
 from os.path import join
 import geopandas as gpd
 from geopy.geocoders import Nominatim
+from map import *
+import folium
 
 DATA = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
 LANDGATE = 'Localities_LGATE_234_WA_GDA2020_Public.geojson'
@@ -117,30 +119,76 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
                 final_data[zone_type][place] = boundary.to_json()
 
     return(final_data)
-    
-# m = folium.Map(location=[-32, 116],
-# zoom_start=12,
-# tiles='https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-# attr='Trial Heatmap')
-# for i in final_data['regions']:
-#     folium.GeoJson(final_data['regions'][i]).add_to(m)
-# jsonString = json.dumps(final_data)
-# jsonFile = open("final_data.json", "w")
-# jsonFile.write(jsonString)
-# jsonFile.close()
 
+def chloropleth():
+    results = map()
+    results['name'] = results['name'].str.upper()
+    results['log'] = np.log(results['sum']+1)
+
+    #Creating a map object for choropleth map
+    #Starting location coordinates [lat, long] set to Perth
+    chloropleth = folium.Map(
+        location=[-32, 116],
+        tiles='https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        zoom_start=12,
+        attr='Trial Heatmap')
+
+    #Creating choropleth map object with key on suburb name
+    folium.Choropleth(
+        geo_data = LANDGATE, #Assign geo_data to your geojson file
+        name = "WA Crime Heat Map",
+        data = results, #Assign dataset of interest
+        columns = ['name', 'log'], #Assign columns in the dataset for plotting
+        key_on = 'feature.properties.name', #Assign the key that geojson uses to connect with dataset
+        fill_color = 'YlOrRd',
+        fill_opacity = 0.9,
+        line_opacity = 0.5,
+        bins = 9,
+        legend_name = 'legend').add_to(chloropleth)
+    
+    #Creating style_function
+    style_function = lambda x: {
+                    'fillColor': '#ffffff', 
+                    'color':'#000000', 
+                    'fillOpacity': 0.1, 
+                    'weight': 0.1}
+
+    #Creating highlight_function
+    highlight_function = lambda x: {
+                    'fillColor': '#000000', 
+                    'color':'#000000', 
+                    'fillOpacity': 0.50, 
+                    'weight': 0.1}
+
+    #Creating popup tooltip object
+    NIL = folium.features.GeoJson(
+        LANDGATE,
+        style_function=style_function, 
+        control=False,
+        highlight_function=highlight_function, 
+        tooltip=folium.features.GeoJsonTooltip(
+            fields=['name'],
+            aliases=['name'],
+            style=("background-color: white; color: #333333; font-family: arial; font-size: 12px; padding: 10px;")))
+
+    #Adding tooltip object to the map
+    chloropleth.add_child(NIL)
+    chloropleth.keep_in_front(NIL)
+    folium.LayerControl().add_to(chloropleth)
+
+    chloropleth.save('trial.html')
+    
 def main():
     for file in files:
         if check_file(file) == None:
             return None
-    landgate_data, landgate_locations, crime_locations, zones_data, zones = data_loading(DATA, LANDGATE, ZONES)
-    missing2, changes = check_naming(landgate_locations, crime_locations, zones)
-    missing_landgate = missing_locations(zones_data, zones, missing2)
-    changes = assign_missing_boundaries(missing_landgate, landgate_data, changes, crime_locations)
-    final_data = zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_locations, zones_data)
-    return final_data
+    # landgate_data, landgate_locations, crime_locations, zones_data, zones = data_loading(DATA, LANDGATE, ZONES)
+    # missing2, changes = check_naming(landgate_locations, crime_locations, zones)
+    # missing_landgate = missing_locations(zones_data, zones, missing2)
+    # changes = assign_missing_boundaries(missing_landgate, landgate_data, changes, crime_locations)
+    # final_data = zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_locations, zones_data)
+    chloropleth()
+    # return final_data
 
 if __name__ == '__main__':
     main()
-
-
