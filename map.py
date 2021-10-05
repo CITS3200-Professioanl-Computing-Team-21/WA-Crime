@@ -212,7 +212,8 @@ def main():
     pd.options.mode.chained_assignment = None
 
     #first section of code prepares/checks the files
-    datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
+    #datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
+    datafile = 'crime.csv'
     geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
     xlsx_csv = 'Suburb Locality.csv'
     coordinates = 'final_data.json'
@@ -253,6 +254,8 @@ def main():
     if selectors.locality == 'all':
         selectors.name = 'all'
         selectors.locality = 'suburb'
+    if selectors.year == 'all':
+        selectors.year = '2010-21'
 
     if selectors.name not in locals()[selectors.locality]:
         print('name failed')
@@ -277,24 +280,28 @@ def main():
             name_data = localities.loc[localities[selectors.locality] == selectors.name]
             name_list = name_data['station'].drop_duplicates().sort_values().tolist()
             selectors.locality = 'station'
+            for name in name_list:
+                selectors.name = name
+                temp_result = churning_final(data, localities, years, distribution, selectors)
+                sum_list.append(temp_result['sum'].sum())
+            result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
         elif selectors.locality == 'region':
             name_data = localities.loc[localities[selectors.locality] == selectors.name]
             name_list = name_data['district'].drop_duplicates().sort_values().tolist()
             selectors.locality = 'district'
+            for name in name_list:
+                selectors.name = name
+                temp_result = churning_final(data, localities, years, distribution, selectors)
+                sum_list.append(temp_result['sum'].sum())
+            result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
     elif selectors.name == 'all':
         name_list = locals()[selectors.locality]
         name_list.remove('unknown')
         name_list.remove('all')
-
-    for name in name_list:
-        selectors.name = name
-        temp_result = churning_final(data, localities, years, distribution, selectors)
-        sum_list.append(temp_result['sum'].sum())
-    result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
-
-    if result.shape[0] == 0:
-        name_list = [selectors.name]
-        sum_list = [0]
+        for name in name_list:
+            selectors.name = name
+            temp_result = churning_final(data, localities, years, distribution, selectors)
+            sum_list.append(temp_result['sum'].sum())
         result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
 
     print(result)
