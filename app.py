@@ -31,10 +31,10 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Suburb_comboBox.addItems(self.readfile("suburbs.csv"))
         self.Year_comboBox_1.addItems(self.readfile("years.csv"))
         self.Year_comboBox_2.addItems(self.readfile("years.csv"))
-        MONTHS = ['All','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
+        MONTHS = ['all','jul','aug','sep','oct','nov','dec','jan','feb','mar','apr','may','jun']
         self.Monthly_comboBox_1.addItems(MONTHS)
         self.Monthly_comboBox_2.addItems(MONTHS)
-        QUARTERS = ['All','Q3','Q4','Q1','Q2']
+        QUARTERS = ['all','q3','q4','q1','q2']
         self.Quarterly_comboBox_1.addItems(QUARTERS)
         self.Quarterly_comboBox_2.addItems(QUARTERS)
         self.Crime_comboBox.addItems(self.readfile("crime_types.csv"))
@@ -190,7 +190,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
 
     # Search Button
     def query(self):
-        text = self.Search_Box.text().split()
+        text = self.Search_Box.text().split(",")
         print(text)
         # check num args
         if (len(text) != 5):

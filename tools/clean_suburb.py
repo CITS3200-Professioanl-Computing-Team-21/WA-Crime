@@ -7,4 +7,4 @@ with open("suburbs.csv","w") as fd1:
             if flag:
                 flag = False
             else:
-                fd1.write(line.split(",")[0]+",")
+                fd1.write(line.split(",")[0].lower()+",")
