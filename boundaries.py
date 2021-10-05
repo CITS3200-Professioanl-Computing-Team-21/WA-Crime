@@ -120,8 +120,8 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
 
     return(final_data)
 
-def chloropleth():
-    results = map()
+def chloropleth(querry):
+    results = map(querry)
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
