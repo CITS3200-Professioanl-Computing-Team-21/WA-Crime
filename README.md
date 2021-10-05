@@ -2,6 +2,9 @@
 # Sean, Aditya, Zak
 
 # Versions
+V 2.91\
+- map.py -> adapted to clean_crime.csv\
+
 V 2.9\
 - map.py -> changed selectors function to take in arguments instead of inputs\
 

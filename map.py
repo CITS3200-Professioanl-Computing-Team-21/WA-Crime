@@ -58,6 +58,33 @@ def file_prep(datafile, geojson, xlsx_csv, coordinates):
 
     return (data, gda.sort_values(by='name'), localities, boundaries)
 
+def new_file_prep(datafile, xlsx_csv):
+    #prepare csv file
+    #consider if filling missing years & crimes is necessary for plotting & analysis
+    with open(datafile, 'r') as file:
+        data = list(csv.reader(file, delimiter = ','))
+        headers, data = data[0], data[1:]
+        headers = [header.lower() for header in headers]
+    for line in data:
+        for i in range(0,len(line)):
+            if line[i] == '':
+                line[i] = '0'
+    data = pd.DataFrame(data)
+    data.columns = headers
+    data['suburb'] = data['suburb'].str.lower()
+    data['website category names'] = data['website category names'].str.lower()
+    data = data.rename(columns = {'annual': 'sum'})
+    data = data.apply(pd.to_numeric, errors='ignore')
+
+    #prepare localities file
+    localities = pd.read_csv(xlsx_csv)
+    localities_header = np.char.lower(localities.columns.values.astype(str))
+    localities.columns = localities_header
+    for header in localities_header:
+        localities[header] = localities[header].str.lower()
+    localities = localities.rename(columns = {'sub_txt': 'suburb'})
+    return (data, localities)
+
 def selector_options_expanded(data, localities):
     #making a list of places
     places = ['all'] + data['suburb'].drop_duplicates().tolist()
@@ -78,19 +105,6 @@ def selector_options_expanded(data, localities):
     return places, types, suburb, station, district, region, crimes, years, distribution
 
 def data_input_extended(query):
-    #class localities:
-    #    def __init__(self, suburb, station, district, region):
-    #        self.suburb = suburb
-    #        self.station = station
-    #        self.district = district
-    #        self.region = region
-
-    #class dates:
-    #    def __init__(self, year, month, quarter):
-    #        self.year = year
-    #        self.month = month
-    #        self.quarter = quarter
-
     class new_selector:
         def __init__(self, name = '', locality = 'all', year = 'all', distribution = 'all', offence = 'all'):
             #indicates name of suburb, station, district or region
@@ -103,13 +117,10 @@ def data_input_extended(query):
             self.distribution = distribution
             #indicates specific offence
             self.offence = offence
-    print('The input format is name, locality, year, distribution, offence')
+    #print('The input format is name, locality, year, distribution, offence')
     #v,w,x,y,z = input('{} {} {} {} {}').split(',')
     #selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
     selectors = new_selector(query[0].strip().lower(),query[1].strip().lower(),query[2].strip().lower(),query[3].strip().lower(),query[4].strip().lower())
-    return selectors
-
-    selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
     return selectors
 
 def churning_final(data, localities, years, distribution, selectors):
@@ -198,11 +209,12 @@ def png_plots():
     png = []
     return png
 
-def statistics():
+def statistics(sums):
     #mean, median, mode
     ##standard deviation, standard error
     ###binomial, poisson, normal distribution and analysis? significant or not?
     stats = []
+
     return stats
 
 def main(query):
@@ -210,8 +222,9 @@ def main(query):
     pd.options.mode.chained_assignment = None
 
     #first section of code prepares/checks the files
+    #datafile = 'crime.csv'
     #datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
-    datafile = 'crime.csv'
+    datafile = 'clean_crime.csv'
     geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
     xlsx_csv = 'Suburb Locality.csv'
     coordinates = 'final_data.json'
@@ -225,7 +238,8 @@ def main(query):
     if check_text(coordinates) == None:
         return None
     #ignore gda and boundaries for now
-    data, gda, localities, boundaries = file_prep(datafile, geojson, xlsx_csv, coordinates)
+    #data, gda, localities, boundaries = file_prep(datafile, geojson, xlsx_csv, coordinates)
+    data, localities = new_file_prep(datafile, xlsx_csv)
 
     #places, crimes, years, months, quarters = selector_options(data)
     places, types, suburb, station, district, region, crimes, years, distribution = selector_options_expanded(data, localities)
@@ -243,11 +257,6 @@ def main(query):
     #step3: filter based on offences
     #step4: sum counts based on name and zone_type
 
-    #run these queries
-    ## [all, suburb, year_range, distribution, crime] # display all suburbs
-    ## [all, station, year_range, distribution, crime] # display all stations
-    ## [all, district, year_range, distribution, crime] # display all districts
-    ## [all, region, year_range, distribution, crime] # display all the regions
     selectors = data_input_extended(query)
     if selectors.locality == 'all':
         selectors.name = 'all'
@@ -310,10 +319,10 @@ def main(query):
 ##main( INPUT QUERY HERE )
 
 #test cases
-#query1 = ['mandurah', 'station', '2011-18', 'sep-dec', 'robbery']
-#main(query1)
-#query2 = ['Rockingham', 'Station', '2018-19', 'Q1', 'Arson']
-#main(query2)
+query1 = ['mandurah', 'station', '2011-18', 'sep-dec', 'robbery']
+main(query1)
+query2 = ['Rockingham', 'Station', '2018-19', 'Q1', 'Arson']
+main(query2)
 
 #if __name__ == '__main__':
  #   main()
