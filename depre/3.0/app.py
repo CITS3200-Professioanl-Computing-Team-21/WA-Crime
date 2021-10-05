@@ -34,7 +34,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         MONTHS = ['All','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun']
         self.Monthly_comboBox_1.addItems(MONTHS)
         self.Monthly_comboBox_2.addItems(MONTHS)
-        QUARTERS = ['All','Q3','Q4','Q1','Q2']
+        QUARTERS = ['All','Q3','Q4','Q1','Q2'] 
         self.Quarterly_comboBox_1.addItems(QUARTERS)
         self.Quarterly_comboBox_2.addItems(QUARTERS)
         self.Crime_comboBox.addItems(self.readfile("crime_types.csv"))
