@@ -187,7 +187,7 @@ def main():
     # missing_landgate = missing_locations(zones_data, zones, missing2)
     # changes = assign_missing_boundaries(missing_landgate, landgate_data, changes, crime_locations)
     # final_data = zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_locations, zones_data)
-    chloropleth()
+    chloropleth(query)
     # return final_data
 
 if __name__ == '__main__':
