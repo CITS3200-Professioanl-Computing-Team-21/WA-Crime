@@ -62,18 +62,17 @@ def selector_options_expanded(data, localities):
     #making a list of places
     places = ['all'] + data['suburb'].drop_duplicates().tolist()
     #making a list of zone types
-    types = ['suburb', 'station', 'district', 'region']
-    suburb = localities['suburb'].drop_duplicates().sort_values().tolist()
-    station = localities['station'].drop_duplicates().sort_values().tolist()
-    district = localities['district'].drop_duplicates().sort_values().tolist()
-    region = localities['region'].drop_duplicates().sort_values().tolist()
+    types = ['all', 'suburb', 'station', 'district', 'region']
+    suburb = ['all'] + localities['suburb'].drop_duplicates().sort_values().tolist()
+    station = ['all'] + localities['station'].drop_duplicates().sort_values().tolist()
+    district = ['all'] + localities['district'].drop_duplicates().sort_values().tolist()
+    region = ['all'] + localities['region'].drop_duplicates().sort_values().tolist()
     #making a list for the crimes occurred
     crimes = ['all'] + data['website category names'].drop_duplicates().tolist()
     #making a list of all the dates
     years = ['all'] + data['year'].drop_duplicates().sort_values().tolist()
     #Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec -> ignore this for now
     #Jul, Aug, Sep, Oct, Nov, Dec, Jan, Feb, Mar, Apr, May, Jun -> focus on this
-    #with months, 2d arrays?
     #q1 == jul + aug + sep, q2 == oct + nov + dec, q3 == jan + feb + mar, q4 == apr + may + jun
     distribution = ['all', 'jul','aug','sep','oct','nov','dec','jan','feb','mar','apr','may', 'jun', 'q1', 'q2', 'q3', 'q4']
     return places, types, suburb, station, district, region, crimes, years, distribution
@@ -109,87 +108,6 @@ def data_input_extended():
 
     selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
     return selectors
-
-def churning_further_simplified(suburbs_cut, selectors):
-    #all,all,all should be the default selectors
-    #afterwards should it be every single selector change rerun this function?
-    #if so, how to make it a recurring function?
-    output = suburbs_cut[suburbs_cut.columns[[0, 1, 2, -1]]]
-    names_list = output['suburb'].drop_duplicates().sort_values().tolist()
-    if selectors.offence != 'all' or selectors.year != 'all':
-        if selectors.offence != 'all':
-            output = output.loc[output['website category names'] == selectors.offence]
-        if selectors.year != 'all':
-            output = output.loc[output['year'] == selectors.year]
-    elif selectors.offence == 'all':
-        output = output.groupby(['suburb'])['sum'].sum()
-        output = pd.DataFrame({'name': names_list, 'sum': list(output)})
-    return output
-
-def churning_further_complicated(names_cut, years, distribution, selectors):
-    #['jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'q1', 'q2', 'q3', 'q4']
-    col_num = np.array([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
-    years = years[1:]
-    distribution = distribution[1:]
-    years_list = []
-    col_list = []
-    initial = [0, 1, 2]
-    q0 = []
-    q1 = [3, 4, 5]
-    q2 = [6, 7, 8]
-    q3 = [9, 10, 11]
-    q4 = [12, 13, 14]
-
-    if selectors.year == 'all':
-        selectors.year = '2010-21'
-    temp1, temp2 = selectors.year.split('-')
-    temp1 = str(int(temp1[-2:]) + 1)
-    [years_list.append(i) for i in years if (temp1 <= i[-2:] and i[-2:] <= temp2)]
-    output = names_cut[names_cut['year'].isin(years_list)]
-
-    if selectors.distribution != 'all':
-        if '-' in selectors.distribution:
-            temp1, temp2 = selectors.distribution.split('-')
-            if 'q' in temp1:
-                temp = range(locals()[temp1][0], locals()[temp2][-1] + 1)
-                [q0.append(i) for i in temp]
-            elif 'q' not in temp1:
-                temp = distribution[distribution.index(temp1):distribution.index(temp2) + 1]
-                [q0.append(distribution.index(i) + 3) for i in temp]
-        elif selectors.distribution == 'q1':
-            q0 = q1
-        elif selectors.distribution == 'q2':
-            q0 = q2
-        elif selectors.distribution == 'q3':
-            q0 = q3
-        elif selectors.distribution == 'q4':
-            q0 = q4
-        elif len(list(selectors.distribution)) == 3:
-            q0 = [distribution.index(selectors.distribution) + 3]
-        output = output[output.columns[initial + q0]]
-
-    col_num = np.array(q0) - 3
-    [col_list.append(distribution[i]) for i in col_num]
-    output['sum'] = output[col_list].sum(axis=1)
-    output = output[output.columns[[0, 1, 2, -1]]]
-    names_list = output['suburb'].drop_duplicates().sort_values().tolist()
-
-    if selectors.offence != 'all':
-        output = output.loc[output['website category names'] == selectors.offence]
-    elif selectors.offence == 'all':
-        output = output.groupby(['suburb'])['sum'].sum()
-        output = pd.DataFrame({'name': names_list, 'sum': list(output)})
-    
-    return output
-
-def churning_further_expanded(names_cut, years, distribution, selectors):
-    #selectors should include [suburb/station/district/region, crime_type, year_range, distribution]
-    ##distribution includes months and quarters
-    if selectors.year not in years or selectors.distribution != 'all':
-        result = churning_further_complicated(names_cut, years, distribution, selectors)
-    elif selectors.year in years and selectors.distribution == 'all':
-        result= churning_further_simplified(names_cut, selectors)
-    return result
 
 def churning_final(data, localities, years, distribution, selectors):
     #['jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'q1', 'q2', 'q3', 'q4']
@@ -298,6 +216,7 @@ def main():
     geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
     xlsx_csv = 'Suburb Locality.csv'
     coordinates = 'final_data.json'
+    sum_list = []
     if check_text(datafile) == None:
         return None
     if check_text(geojson) == None:
@@ -325,33 +244,58 @@ def main():
     #step3: filter based on offences
     #step4: sum counts based on name and zone_type
 
-    #test and run these queries
+    #run these queries
     ## [all, suburb, year_range, distribution, crime] # display all suburbs
     ## [all, station, year_range, distribution, crime] # display all stations
     ## [all, district, year_range, distribution, crime] # display all districts
     ## [all, region, year_range, distribution, crime] # display all the regions
     selectors = data_input_extended()
-    if selectors.name != 'all':
-        #result = churning_further_expanded(names_cut, years, distribution, selectors)
-        result = churning_final(data, localities, years, distribution, selectors)
-    elif selectors.name == 'all':
-        sum_list = []
-        name_list = locals()[selectors.locality]
-        name_list.remove('unknown')
-        for name in name_list:
-            selectors.name = name
-            temp_result = churning_final(data, localities, years, distribution, selectors)
-            sum_list.append(temp_result['sum'].sum())
-        result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
-        
-    '''if (selectors.locality not in types and selectors.name not in locals()[selectors.locality]):
+    if selectors.locality == 'all':
+        selectors.name = 'all'
+        selectors.locality = 'suburb'
+
+    if selectors.name not in locals()[selectors.locality]:
+        print('name failed')
         return None
-    if selectors.year not in years:
+    if selectors.locality not in types:
+        print('locality failed')
         return None
-    if selectors.distribution not in distribution:
+    if (selectors.year.split('-')[0] + '-' + str(int(selectors.year.split('-')[0][2:]) + 1)) not in years:
+        print('year failed')
+        return None
+    if (selectors.distribution.split('-')[0]) not in distribution:
+        print('distribution failed')
         return None
     if selectors.offence not in crimes:
-        return None'''
+        print('offence failed')
+        return None
+
+    if selectors.name != 'all':
+        if selectors.locality == 'suburb' or selectors.locality == 'station':
+            result = churning_final(data, localities, years, distribution, selectors)
+        elif selectors.locality == 'district':
+            name_data = localities.loc[localities[selectors.locality] == selectors.name]
+            name_list = name_data['station'].drop_duplicates().sort_values().tolist()
+            selectors.locality = 'station'
+        elif selectors.locality == 'region':
+            name_data = localities.loc[localities[selectors.locality] == selectors.name]
+            name_list = name_data['district'].drop_duplicates().sort_values().tolist()
+            selectors.locality = 'district'
+    elif selectors.name == 'all':
+        name_list = locals()[selectors.locality]
+        name_list.remove('unknown')
+        name_list.remove('all')
+
+    for name in name_list:
+        selectors.name = name
+        temp_result = churning_final(data, localities, years, distribution, selectors)
+        sum_list.append(temp_result['sum'].sum())
+    result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
+
+    if result.shape[0] == 0:
+        name_list = [selectors.name]
+        sum_list = [0]
+        result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
 
     print(result)
     return result

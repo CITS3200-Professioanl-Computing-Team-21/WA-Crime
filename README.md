@@ -2,6 +2,10 @@
 # Sean, Aditya, Zak
 
 # Versions
+V 2.7\
+- map.py -> localities summed and categorised one level down
+         -> e.g. stations will be summed and categorised under district
+         -> e.g. districts will be summed and categorised under region
 V 2.6\
 - map.py -> script able to query 'all' selectors
 
