@@ -12,7 +12,7 @@ from geopy.geocoders import Nominatim
 from map import *
 import folium
 
-DATA = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
+DATA = 'crime.csv'
 LANDGATE = 'Localities_LGATE_234_WA_GDA2020_Public.geojson'
 ZONES = 'Suburb Locality.csv'
 files = [DATA, LANDGATE, ZONES]
