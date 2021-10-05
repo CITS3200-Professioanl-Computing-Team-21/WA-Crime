@@ -77,19 +77,7 @@ def selector_options_expanded(data, localities):
     distribution = ['all', 'jul','aug','sep','oct','nov','dec','jan','feb','mar','apr','may', 'jun', 'q1', 'q2', 'q3', 'q4']
     return places, types, suburb, station, district, region, crimes, years, distribution
 
-def data_input_extended():
-    #class localities:
-    #    def __init__(self, suburb, station, district, region):
-    #        self.suburb = suburb
-    #        self.station = station
-    #        self.district = district
-    #        self.region = region
-
-    #class dates:
-    #    def __init__(self, year, month, quarter):
-    #        self.year = year
-    #        self.month = month
-    #        self.quarter = quarter
+def data_input_extended(query):
 
     class new_selector:
         def __init__(self, name = '', locality = 'all', year = 'all', distribution = 'all', offence = 'all'):
@@ -103,10 +91,10 @@ def data_input_extended():
             self.distribution = distribution
             #indicates specific offence
             self.offence = offence
-    print('The input format is name, locality, year, distribution, offence')
-    v,w,x,y,z = input('{} {} {} {} {}').split(',')
-
-    selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
+    #print('The input format is name, locality, year, distribution, offence')
+    #v,w,x,y,z = input('{} {} {} {} {}').split(',')
+    #selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
+    selectors = new_selector(query[0].strip().lower(),query[1].strip().lower(),query[2].strip().lower(),query[3].strip().lower(),query[4].strip().lower())
     return selectors
 
 def churning_final(data, localities, years, distribution, selectors):
@@ -134,7 +122,6 @@ def churning_final(data, localities, years, distribution, selectors):
     [years_list.append(i) for i in years if (temp1 <= i[-2:] and i[-2:] <= temp2)]
     output = names_cut[names_cut['year'].isin(years_list)]
 
-    #print('error1')
     #print(output)
 
     if selectors.distribution != 'all':
@@ -160,7 +147,6 @@ def churning_final(data, localities, years, distribution, selectors):
         q0 = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     output = output[output.columns[initial + q0]]
 
-    #print('error2')
     #print(output)
 
     col_num = np.array(q0) - 3
@@ -169,7 +155,6 @@ def churning_final(data, localities, years, distribution, selectors):
     output = output[output.columns[[0, 1, 2, -1]]]
     names_list = output['suburb'].drop_duplicates().sort_values().tolist()
 
-    #print('error3')
     #print(output)
 
     if selectors.offence != 'all':
@@ -179,7 +164,6 @@ def churning_final(data, localities, years, distribution, selectors):
         output = output.groupby(['suburb'])['sum'].sum()
         output = pd.DataFrame({'name': names_list, 'sum': list(output)})
 
-    #print('error4')
     #print(output)
 
     columns = output['name'].drop_duplicates().sort_values().tolist()
@@ -189,8 +173,9 @@ def churning_final(data, localities, years, distribution, selectors):
     result['sum'] = result['sum'].fillna(0)
     result = result.astype(int, errors='ignore')
 
-    #print('error5')
     #print(result)
+
+    #print()
     
     return result
 
@@ -200,30 +185,36 @@ def png_plots():
     png = []
     return png
 
-def statistics():
+def statistics(sums):
     #mean, median, mode
     ##standard deviation, standard error
     ###binomial, poisson, normal distribution and analysis? significant or not?
     stats = []
+
     return stats
 
-def main():
+def main(query):
     #to ignore warning [[]], code will run as per normal
     pd.options.mode.chained_assignment = None
 
     #first section of code prepares/checks the files
-    datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
+    #datafile = 'crime.csv'
+    datafile = 'crime.csv'
     geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
     xlsx_csv = 'Suburb Locality.csv'
     coordinates = 'final_data.json'
     sum_list = []
     if check_text(datafile) == None:
+        print('datafile failed')
         return None
     if check_text(geojson) == None:
+        print('geojson failed')
         return None
     if check_text(xlsx_csv) == None:
+        print('xlsx failed')
         return None
     if check_text(coordinates) == None:
+        print('coordinates failed')
         return None
     #ignore gda and boundaries for now
     data, gda, localities, boundaries = file_prep(datafile, geojson, xlsx_csv, coordinates)
@@ -244,15 +235,12 @@ def main():
     #step3: filter based on offences
     #step4: sum counts based on name and zone_type
 
-    #run these queries
-    ## [all, suburb, year_range, distribution, crime] # display all suburbs
-    ## [all, station, year_range, distribution, crime] # display all stations
-    ## [all, district, year_range, distribution, crime] # display all districts
-    ## [all, region, year_range, distribution, crime] # display all the regions
-    selectors = data_input_extended()
+    selectors = data_input_extended(query)
     if selectors.locality == 'all':
         selectors.name = 'all'
         selectors.locality = 'suburb'
+    if selectors.year == 'all':
+        selectors.year = '2010-21'
 
     if selectors.name not in locals()[selectors.locality]:
         print('name failed')
@@ -277,32 +265,40 @@ def main():
             name_data = localities.loc[localities[selectors.locality] == selectors.name]
             name_list = name_data['station'].drop_duplicates().sort_values().tolist()
             selectors.locality = 'station'
+            for name in name_list:
+                selectors.name = name
+                temp_result = churning_final(data, localities, years, distribution, selectors)
+                sum_list.append(temp_result['sum'].sum())
+            result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
         elif selectors.locality == 'region':
             name_data = localities.loc[localities[selectors.locality] == selectors.name]
             name_list = name_data['district'].drop_duplicates().sort_values().tolist()
             selectors.locality = 'district'
+            for name in name_list:
+                selectors.name = name
+                temp_result = churning_final(data, localities, years, distribution, selectors)
+                sum_list.append(temp_result['sum'].sum())
+            result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
     elif selectors.name == 'all':
         name_list = locals()[selectors.locality]
         name_list.remove('unknown')
         name_list.remove('all')
-
-    for name in name_list:
-        selectors.name = name
-        temp_result = churning_final(data, localities, years, distribution, selectors)
-        sum_list.append(temp_result['sum'].sum())
-    result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
-
-    if result.shape[0] == 0:
-        name_list = [selectors.name]
-        sum_list = [0]
+        for name in name_list:
+            selectors.name = name
+            temp_result = churning_final(data, localities, years, distribution, selectors)
+            sum_list.append(temp_result['sum'].sum())
         result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
 
-    print(result)
+    #print(result)
     return result
 
     #return ****.html, statistical_info
 
-if __name__ == '__main__':
-    main()
+#query1 = ['mandurah', 'station', '2011-18', 'sep-dec', 'robbery']
+#main(query1)
+#if __name__ == '__main__':
+ #   main()
+#if __name__ == '__main__':
+#    main()
 
 #signature [name, zone_type, year_range, distribution, crime]

@@ -9,7 +9,7 @@ from shapely.ops import unary_union
 from os.path import join
 import geopandas as gpd
 from geopy.geocoders import Nominatim
-from map import *
+import map as mp
 import folium
 
 DATA = 'crime.csv'
@@ -120,8 +120,9 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
 
     return(final_data)
 
-def chloropleth(querry):
-    results = map(querry)
+def chloropleth(query):
+    results = mp.main(query)
+    print(results)
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 

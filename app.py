@@ -5,6 +5,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5 import QtWidgets, QtCore
 from ui import Ui_MainWindow
+import boundaries
 
 # BUTTON IDENTIFIERS
 STATION = 0
@@ -157,13 +158,14 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
 
             # updates html display with new html
-            url = QtCore.QUrl.fromLocalFile("/regions.html")
+            url = QtCore.QUrl.fromLocalFile("/trial.html")
             self.browser.load(url)
 
     # placeholder, function generates a html based on input query
     def stub(self,name, zone_type, year, period, crime):
         print("Name, Zone_type, Year, Period, Crime")
         print(name, zone_type, year, period, crime)
+        output = boundaries.chloropleth([name, zone_type, year, period, crime])
 
     # Function for Screenshot button    
     def screenshot(self):
@@ -272,7 +274,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.stub(text[0], text[1], text[2], text[3], text[4])
 
         # updates html display with new html
-        url = QtCore.QUrl.fromLocalFile("/stations.html")
+        url = QtCore.QUrl.fromLocalFile("/trial.html")
         self.browser.load(url)
         return True
 
