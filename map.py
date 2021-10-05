@@ -77,7 +77,7 @@ def selector_options_expanded(data, localities):
     distribution = ['all', 'jul','aug','sep','oct','nov','dec','jan','feb','mar','apr','may', 'jun', 'q1', 'q2', 'q3', 'q4']
     return places, types, suburb, station, district, region, crimes, years, distribution
 
-def data_input_extended():
+def data_input_extended(query):
     #class localities:
     #    def __init__(self, suburb, station, district, region):
     #        self.suburb = suburb
@@ -104,7 +104,10 @@ def data_input_extended():
             #indicates specific offence
             self.offence = offence
     print('The input format is name, locality, year, distribution, offence')
-    v,w,x,y,z = input('{} {} {} {} {}').split(',')
+    #v,w,x,y,z = input('{} {} {} {} {}').split(',')
+    #selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
+    selectors = new_selector(query[0].strip().lower(),query[1].strip().lower(),query[2].strip().lower(),query[3].strip().lower(),query[4].strip().lower())
+    return selectors
 
     selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
     return selectors
@@ -134,7 +137,6 @@ def churning_final(data, localities, years, distribution, selectors):
     [years_list.append(i) for i in years if (temp1 <= i[-2:] and i[-2:] <= temp2)]
     output = names_cut[names_cut['year'].isin(years_list)]
 
-    #print('error1')
     #print(output)
 
     if selectors.distribution != 'all':
@@ -160,7 +162,6 @@ def churning_final(data, localities, years, distribution, selectors):
         q0 = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     output = output[output.columns[initial + q0]]
 
-    #print('error2')
     #print(output)
 
     col_num = np.array(q0) - 3
@@ -169,7 +170,6 @@ def churning_final(data, localities, years, distribution, selectors):
     output = output[output.columns[[0, 1, 2, -1]]]
     names_list = output['suburb'].drop_duplicates().sort_values().tolist()
 
-    #print('error3')
     #print(output)
 
     if selectors.offence != 'all':
@@ -179,7 +179,6 @@ def churning_final(data, localities, years, distribution, selectors):
         output = output.groupby(['suburb'])['sum'].sum()
         output = pd.DataFrame({'name': names_list, 'sum': list(output)})
 
-    #print('error4')
     #print(output)
 
     columns = output['name'].drop_duplicates().sort_values().tolist()
@@ -189,7 +188,6 @@ def churning_final(data, localities, years, distribution, selectors):
     result['sum'] = result['sum'].fillna(0)
     result = result.astype(int, errors='ignore')
 
-    #print('error5')
     #print(result)
     
     return result
@@ -207,7 +205,7 @@ def statistics():
     stats = []
     return stats
 
-def main():
+def main(query):
     #to ignore warning [[]], code will run as per normal
     pd.options.mode.chained_assignment = None
 
@@ -250,7 +248,7 @@ def main():
     ## [all, station, year_range, distribution, crime] # display all stations
     ## [all, district, year_range, distribution, crime] # display all districts
     ## [all, region, year_range, distribution, crime] # display all the regions
-    selectors = data_input_extended()
+    selectors = data_input_extended(query)
     if selectors.locality == 'all':
         selectors.name = 'all'
         selectors.locality = 'suburb'
@@ -309,7 +307,15 @@ def main():
 
     #return ****.html, statistical_info
 
-if __name__ == '__main__':
-    main()
+##main( INPUT QUERY HERE )
+
+#test cases
+#query1 = ['mandurah', 'station', '2011-18', 'sep-dec', 'robbery']
+#main(query1)
+#query2 = ['Rockingham', 'Station', '2018-19', 'Q1', 'Arson']
+#main(query2)
+
+#if __name__ == '__main__':
+ #   main()
 
 #signature [name, zone_type, year_range, distribution, crime]

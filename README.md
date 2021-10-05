@@ -2,8 +2,11 @@
 # Sean, Aditya, Zak
 
 # Versions
+V 2.9\
+- map.py -> changed selectors function to take in arguments instead of inputs\
+
 V 2.8\
-- map.py -> bug fixes
+- map.py -> bug fixes\
 
 V 2.7\
 - map.py -> localities summed and categorised one level down\
