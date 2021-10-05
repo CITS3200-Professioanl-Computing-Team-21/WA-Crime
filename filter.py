@@ -98,8 +98,11 @@ def filter(name, zone, year, mq, offence):
     else:
         sub_zone = zone
 
-    query += "SELECT Localities." + sub_zone + ", " + "Crime, Year_fn, Localities." + zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
-    # CURRENT PROBLEM. YEAR_FN IS ISNT PROPERLY INT FORM, CANT DO COMPARISON 
+    # Below is for a more descriptive query result
+    # query += "SELECT Localities." + sub_zone + ", " + "Crime, Year_fn, Localities." + zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
+
+    query += "SELECT Localities." + sub_zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
+    # CURRENT PROBLEM. LEAKS AROUND YEAR_FN REQUIRING YOU INCLUDE PREVIOUS OR FOLLOWING YEARS
     if name != 'all' or offence != 'all' or year != 'all':
         query += " WHERE"
         # includeand to check if query has multiple conditions, so that "AND" can be appended to include them
@@ -132,12 +135,15 @@ def filter(name, zone, year, mq, offence):
     # Print output to command line
     c.execute(query)
     j = 0
+    output = []
     for i in c.fetchall():
+        output.append(list(i))
         print(j, i)
         j += 1
     # print(c.fetchall())
 
     print(query)
+    return output
 
 def distribution(mq):
     # Collects the months whose data are to be summed, scans from m0 to m1 collecting
@@ -217,7 +223,7 @@ def fill_table(c, file_name, table):
     
 
 # Name, zone, year, month/quarter, crime
-filter('all', 'all', 'all', 'all', 'all') 
+filter('Mandurah', 'Station', '2012-2017', 'Jul-Oct', 'Stealing') 
 
 #perth district = 92571, wembley station = 34120
 
