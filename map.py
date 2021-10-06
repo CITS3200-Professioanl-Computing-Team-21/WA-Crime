@@ -121,6 +121,28 @@ def data_input_extended(query):
     #v,w,x,y,z = input('{} {} {} {} {}').split(',')
     #selectors = new_selector(v.strip().lower(), w.strip().lower(),x.strip().lower(), y.strip().lower(), z.strip().lower())
     selectors = new_selector(query[0].strip().lower(),query[1].strip().lower(),query[2].strip().lower(),query[3].strip().lower(),query[4].strip().lower())
+    #fix selectors.year
+    
+    if selectors.locality == 'all':
+        selectors.name = 'all'
+        selectors.locality = 'suburb'
+
+    if selectors.year == 'all' or selectors.year == 'all-all':
+        selectors.year = '2010-21'
+    elif selectors.year.split('-')[0] == 'all' or selectors.year.split('-')[-1] == 'all':
+        temp = selectors.year.split('-')
+        temp.remove('all')
+        selectors.year = '-'.join(temp)
+    elif len(selectors.year.split('-')) == 4:
+        selectors.year = selectors.year[:5] + selectors.year[-2:]
+
+    if selectors.distribution == 'all-all':
+        selectors.distribution = 'all'
+    elif '-' in selectors.distribution:
+        if selectors.distribution.split('-')[0] == 'all' or selectors.distribution.split('-')[1] == 'all':
+            temp = selectors.distribution.split('-')
+            temp.remove('all')
+            selectors.distribution = temp
     return selectors
 
 def churning_final(data, localities, years, distribution, selectors):
@@ -225,17 +247,17 @@ def main(query):
     #datafile = 'crime.csv'
     #datafile = 'Locality_Data_Filtered (from Quart Website Rep Mar213-2.csv'
     datafile = 'clean_crime.csv'
-    geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
+    #geojson = r'Localities_LGATE_234_WA_GDA2020_Public.geojson'
     xlsx_csv = 'Suburb Locality.csv'
-    coordinates = 'final_data.json'
+    #coordinates = 'final_data.json'
     sum_list = []
     if check_text(datafile) == None:
         return None
-    if check_text(geojson) == None:
+    #if check_text(geojson) == None:
         return None
     if check_text(xlsx_csv) == None:
         return None
-    if check_text(coordinates) == None:
+    #if check_text(coordinates) == None:
         return None
     #ignore gda and boundaries for now
     #data, gda, localities, boundaries = file_prep(datafile, geojson, xlsx_csv, coordinates)
@@ -258,11 +280,6 @@ def main(query):
     #step4: sum counts based on name and zone_type
 
     selectors = data_input_extended(query)
-    if selectors.locality == 'all':
-        selectors.name = 'all'
-        selectors.locality = 'suburb'
-    if selectors.year == 'all':
-        selectors.year = '2010-21'
 
     if selectors.name not in locals()[selectors.locality]:
         print('name failed')
@@ -271,6 +288,7 @@ def main(query):
         print('locality failed')
         return None
     if (selectors.year.split('-')[0] + '-' + str(int(selectors.year.split('-')[0][2:]) + 1)) not in years:
+        print(selectors.year)
         print('year failed')
         return None
     if (selectors.distribution.split('-')[0]) not in distribution:
@@ -316,14 +334,14 @@ def main(query):
 
     #return ****.html, statistical_info
 
-##main( INPUT QUERY HERE )
-
-#test cases
 query1 = ['mandurah', 'station', '2011-18', 'sep-dec', 'robbery']
 main(query1)
 query2 = ['Rockingham', 'Station', '2018-19', 'Q1', 'Arson']
 main(query2)
-
+query3 = ['all', 'all', 'all-2018-19', 'all', 'all']
+main(query3)
+query4 = ['all', 'all', '2010-11-2015-16', 'all', 'all']
+main(query4)
 #if __name__ == '__main__':
  #   main()
 
