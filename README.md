@@ -18,6 +18,8 @@ Selectors based on selector2.doc, adjustable via ./config csv
 # Versions
 v 3.1 (integration patch)\
 - Changed config/ .csv to be consistent with back end
+- Query is now comma deliminated
+- Error checking logic for period selectors
 
 v 3.0 (implemented functionailities of v2.5 and variable name changes in .ui)\
 Features: functional features of v2.0, updated to fit selector2.doc, removed adjustable font, added placeholders for anomaly display
