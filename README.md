@@ -14,6 +14,9 @@ Selectors based on selector2.doc, adjustable via ./config csv
 - Time selectors Year, Month, Quarter
 - Crime selector
 - Selectors respond to other selected options
+- Query search error checking
+- Prompt format for query search
+- Dropdown query copied into query search box for copy/edit
 
 # Versions
 v 3.1 (integration patch)\
