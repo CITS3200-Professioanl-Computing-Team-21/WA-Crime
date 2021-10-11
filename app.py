@@ -6,7 +6,7 @@ from PyQt5.QtWebEngineWidgets import *
 from PyQt5 import QtWidgets, QtCore
 from ui import Ui_MainWindow
 
-# BUTTON IDENTIFIERS
+# IDENTIFIERS
 STATION = 0
 DISTRICT = 1
 REGION = 2
@@ -23,13 +23,23 @@ QUARTERS = ['all','q3','q4','q1','q2']
 
 class MainWindow(QMainWindow,Ui_MainWindow):
     def __init__(self):
+        # initialise widgets from ui.py
         super(MainWindow,self).__init__()
         self.setupUi(self)
-        self.showHtml()
+        self.browser = QWebEngineView()
+        self.browser.load(QUrl("https://www.google.com"))
+        #self.browser.load(QtCore.QUrl.fromLocalFile("/regions.html"))
+        hboxlayout = QHBoxLayout(self.frame)
+        hboxlayout.addWidget(self.browser)
+
+        # export button
         self.Search_pushButton.clicked.connect(self.query)
         self.Screenshot_pushButton.clicked.connect(self.screenshot)
 
-        # initalises combo boxes options from csv in ./config
+        # search box prompt
+        self.lineEdit.setPlaceholderText("Name,Zone_type,Year,Period,Crime")
+
+        # initialises combo boxes options from csv in ./config
         self.Station_comboBox.addItems(self.readfile("stations.csv"))
         self.District_comboBox.addItems(self.readfile("districts.csv"))
         self.Region_comboBox.addItems(self.readfile("regions.csv"))
@@ -45,7 +55,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Monthly_comboBox_2.setItemText(0,"") 
         self.Quarterly_comboBox_2.setItemText(0,"")
 
-        # inital configuration
+        # inital configuration [all,region,all,all,all]
         self.cache_zone_type = "region"
         self.cache_zone = "all"
         self.cache_year = "all"
@@ -59,7 +69,6 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Quarterly_comboBox_2.setCurrentIndex(-1)
         self.Monthly_comboBox_1.setCurrentIndex(-1)
         self.Monthly_comboBox_2.setCurrentIndex(-1)
-        self.lineEdit.setPlaceholderText("Name,Zone_type,Year,Period,Crime")
 
         # make Zone and Crime combo boxes searchable
         self.Station_comboBox.setEditable(True)
@@ -100,16 +109,32 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         fd.close()
         return data.split(",")
 
+    # generates a new html and displays it
+    def updatehtml(self):
+        # generates new html (placeholder for front end)
+        self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
+
+        # updates html display with new html
+        url = QtCore.QUrl.fromLocalFile("/regions.html")
+        self.browser.load(url)
     
-    # redisplays new map based on selectors
+    # placeholder, function generates a html based on input query
+    def stub(self,name, zone_type, year, period, crime):
+        print("Name, Zone_type, Year, Period, Crime")
+        print(name, zone_type, year, period, crime)
+
+    # callback function that redisplays new map based on selectors
+    # src is the source(dropdown) that cause the update
+    # will only activate if unlocked (self.update == true)
     def generate_map(self, src):
         if self.update:
             # update current dropdown options
+            # zone selectors
             if src == STATION:
                 self.cache_zone_type = "station"
-                self.cache_zone = self.Station_comboBox.currentText() # store current selection
-                self.update = False
-                self.District_comboBox.setCurrentIndex(-1) # deselect other selectors 
+                self.cache_zone = self.Station_comboBox.currentText() # cache current selection for html generation
+                self.update = False                         # setCurrentIndex calls the callback, lock prevent looping
+                self.District_comboBox.setCurrentIndex(-1)  # deselect other selectors 
                 self.Region_comboBox.setCurrentIndex(-1)
                 self.Suburb_comboBox.setCurrentIndex(-1)
                 self.update = True
@@ -137,17 +162,21 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.Station_comboBox.setCurrentIndex(-1)
                 self.Region_comboBox.setCurrentIndex(-1)
                 self.update = True
+
+            # period selectors 
+            # prevents invalid input queries based on selector.doc
             elif src == QUARTER:
                 self.update = False
                 self.Monthly_comboBox_1.setCurrentIndex(-1)
                 self.Monthly_comboBox_2.setCurrentIndex(-1)
                 self.update = True
-                if self.Quarterly_comboBox_1.currentIndex() <= 0:
+                if self.Quarterly_comboBox_1.currentIndex() <= 0:   # if all in quarter1, deselect option in quarter2
                     self.update = False
                     self.Quarterly_comboBox_2.setCurrentIndex(-1)
                     self.update = True
+                # updating cache of changes
                 self.cache_period = self.Quarterly_comboBox_1.currentText()
-                if self.Quarterly_comboBox_2.currentIndex() >= 1:
+                if self.Quarterly_comboBox_2.currentIndex() >= 1:   # if option selected in quarter2
                     self.cache_period += "-"+self.Quarterly_comboBox_2.currentText()
             elif src == QUARTER2:
                 self.update = False
@@ -155,7 +184,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.Monthly_comboBox_2.setCurrentIndex(-1)
                 self.update = True
                 if self.Quarterly_comboBox_1.currentIndex() == self.Quarterly_comboBox_2.currentIndex() or \
-                self.Quarterly_comboBox_1.currentIndex() <= 0:
+                self.Quarterly_comboBox_1.currentIndex() <= 0:      # disallow similar options in both
                     self.update = False
                     self.Quarterly_comboBox_2.setCurrentIndex(-1)
                     self.update = True
@@ -165,7 +194,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.cache_period += "-"+self.Quarterly_comboBox_2.currentText()
             elif src == MONTH:
                 self.update = False
-                self.Quarterly_comboBox_1.setCurrentIndex(-1)   # deselect quarters
+                self.Quarterly_comboBox_1.setCurrentIndex(-1)  
                 self.Quarterly_comboBox_2.setCurrentIndex(-1)
                 self.update = True
                 if self.Monthly_comboBox_1.currentIndex() <= 0:
@@ -189,8 +218,11 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.cache_period = self.Monthly_comboBox_1.currentText()
                 if self.Monthly_comboBox_2.currentIndex() >= 1:
                     self.cache_period += "-"+self.Monthly_comboBox_2.currentText()
+            
+            # year selector
             elif src == YEAR:
-                if self.Year_comboBox_1.currentIndex() <= self.Year_comboBox_2.currentIndex() or self.Year_comboBox_1.currentIndex() == 0:
+                if self.Year_comboBox_1.currentIndex() <= self.Year_comboBox_2.currentIndex() or \
+                self.Year_comboBox_1.currentIndex() == 0: # disallow years out of order
                     self.update = False
                     self.Year_comboBox_2.setCurrentIndex(-1)
                     self.update = True
@@ -206,61 +238,37 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.cache_year = self.Year_comboBox_1.currentText()                    
                 if self.Year_comboBox_2.currentIndex() >= 1:
                     self.cache_year += "-"+self.Year_comboBox_2.currentText()
+            
+            #crime selector
             elif src == CRIME:
                 self.cache_crime = self.Crime_comboBox.currentText()
 
-            # generates new html (placeholder for front end)
-            self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
+            # updates the query to the search box
             self.lineEdit.setText("{},{},{},{},{}".format(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime))
 
-            # updates html display with new html
-            url = QtCore.QUrl.fromLocalFile("/regions.html")
-            self.browser.load(url)
+            self.updatehtml()
             return True
 
-    # placeholder, function generates a html based on input query
-    def stub(self,name, zone_type, year, period, crime):
-        print("Name, Zone_type, Year, Period, Crime")
-        print(name, zone_type, year, period, crime)
-
-    # Function for Screenshot button    
-    def screenshot(self):
-        fileName_choose, filetype = QFileDialog.getSaveFileName(self,
-                                                                "Save Image",
-                                                                "./",  # initial dir
-                                                                ".jpg")
-
-        screen = QApplication.primaryScreen()
-        screenshot = screen.grabWindow(self.frame.winId())
-        screenshot.save(fileName_choose, 'jpg')
-        #QMessageBox.warning(self,"Tips","Finished!",QMessageBox.Yes,QMessageBox.Yes)
-
-    # Function to load html
-    def showHtml(self):
-        self.browser = QWebEngineView()
-        self.browser.load(QUrl("https://www.google.com"))
-        hboxlayout = QHBoxLayout(self.frame)
-        hboxlayout.addWidget(self.browser)
-
     # Search Button
+    # check if input query is valid via finding corresponding dropdowns options (and selecting them)
     def query(self):
         text = self.lineEdit.text().split(",") # line edit is the search box
-        print(text)
         # check num args
         if (len(text) != 5):
-            print("invalid number of args")
+            QMessageBox.warning(self,"Error","Invalid query format")
             return False
         
         # checking zone
         if (text[1] not in ["station","district","region","suburb"]):
-            print("invalid Zone")
+            QMessageBox.warning(self,"Error","Invalid zone_type")
             return False
         else:
             if text[1] == "station":
                 if (self.Station_comboBox.findText(text[0]) == -1):
-                    print("invalid Station")
+                    QMessageBox.warning(self,"Error","Invalid station")
                     return False
                 else:
+                    # updates corresponding dropdown and caches new value
                     self.update = False
                     self.Station_comboBox.setCurrentIndex(self.Station_comboBox.findText(text[0]))
                     self.District_comboBox.setCurrentIndex(-1)
@@ -271,7 +279,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.update = True
             elif text[1] == "district":
                 if (self.District_comboBox.findText(text[0]) == -1):
-                    print("invalid District")
+                    QMessageBox.warning(self,"Error","Invalid district")
                     return False
                 else:
                     self.update = False
@@ -284,7 +292,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.update = True
             elif text[1] == "region":
                 if (self.Region_comboBox.findText(text[0]) == -1):
-                    print("invalid Region")
+                    QMessageBox.warning(self,"Error","Invalid region")
                     return False
                 else:
                     self.update = False
@@ -297,7 +305,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.update = True
             elif text[1] == "suburb":
                 if (self.Suburb_comboBox.findText(text[0]) == -1):
-                    print("invalid Suburb")
+                    QMessageBox.warning(self,"Error","Invalid suburb")
                     return False
                 else:
                     self.update = False
@@ -309,7 +317,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.cache_zone_type = "suburb"
                     self.update = True
 
-        # check year
+        # checking year
         if text[2] == "all":
             self.update = False
             self.Year_comboBox_1.setCurrentIndex(0)
@@ -318,13 +326,13 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             self.update = True
         else:
             buf = text[2].split("-")
-            if len(buf) == 2 and self.Year_comboBox_1.findText(text[2]) != -1:   #single year
+            if len(buf) == 2 and self.Year_comboBox_1.findText(text[2]) != -1:   #single year (2012-13)
                 self.update = False
                 self.Year_comboBox_1.setCurrentIndex(self.Year_comboBox_1.findText(text[2]))
                 self.Year_comboBox_2.setCurrentIndex(-1)
                 self.cache_year = self.Year_comboBox_1.currentText()
                 self.update = True
-            elif len(buf) == 4:   #year range
+            elif len(buf) == 4:   #year range (2012-13 - 2014-15)
                 buf = [buf[0]+"-"+buf[1],buf[2]+"-"+buf[3]]
                 i = self.Year_comboBox_1.findText(buf[0])
                 j = self.Year_comboBox_2.findText(buf[1])
@@ -335,15 +343,13 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.cache_year = self.Year_comboBox_1.currentText()+"-"+self.Year_comboBox_2.currentText()
                     self.update = True
                 else:
-                    print("invalid Years")
+                    QMessageBox.warning(self,"Error","Invalid year range")
                     return False
             else:
-                print("invalid Year")
+                QMessageBox.warning(self,"Error","Invalid year")
                 return False
 
         #check month/quarter
-        MONTHS = ['all','jul','aug','sep','oct','nov','dec','jan','feb','mar','apr','may','jun']
-        QUARTERS = ['all','q3','q4','q1','q2']
         buf = text[3].split("-")
         if buf[0] in MONTHS:
             self.Quarterly_comboBox_1.setCurrentIndex(-1)
@@ -361,7 +367,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.cache_period = self.Monthly_comboBox_1.currentText()+"-"+self.Monthly_comboBox_2.currentText()
                 self.update = True
             else:
-                print("invalid Period")
+                QMessageBox.warning(self,"Error","Invalid month")
                 return False
 
         elif buf[0] in QUARTERS:
@@ -380,15 +386,15 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.cache_period = self.Quarterly_comboBox_1.currentText()+"-"+self.Quarterly_comboBox_2.currentText()
                 self.update = True
             else:
-                print("invalid Period")
+                QMessageBox.warning(self,"Error","Invalid quarter")
                 return False
         else:
-            print("invalid Period")
+            QMessageBox.warning(self,"Error","Invalid period")
             return False
 
         # check crime
         if (self.Crime_comboBox.findText(text[4]) == -1):
-            print("invalid number of Crime")
+            QMessageBox.warning(self,"Error","Invalid crime_type")
             return False
         else:
             self.update = False
@@ -396,13 +402,19 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             self.cache_crime = self.Crime_comboBox.currentText()
             self.update = True
 
-        # generates new html (placeholder for front end)
-        self.stub(text[0], text[1], text[2], text[3], text[4])
-
-        # updates html display with new html
-        url = QtCore.QUrl.fromLocalFile("/stations.html")
-        self.browser.load(url)
+        self.updatehtml()
         return True
+
+    # Function for Screenshot button    
+    def screenshot(self):
+        fileName_choose, filetype = QFileDialog.getSaveFileName(self,
+                                                                "Save Image",
+                                                                "./",  # initial dir
+                                                                ".jpg")
+
+        screen = QApplication.primaryScreen()
+        screenshot = screen.grabWindow(self.frame.winId())
+        screenshot.save(fileName_choose, 'jpg')
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
