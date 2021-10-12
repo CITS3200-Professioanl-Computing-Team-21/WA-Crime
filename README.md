@@ -15,7 +15,7 @@ Selectors based on selector2.doc, adjustable via ./config csv
 - Crime selector
 
 # Versions
-v 3.1 (integration patch)\
+v 3.1 (integration patch)
 - Changed config/ .csv to be consistent with back end
 - Query is now comma deliminated
 - Error checking logic for period selectors
@@ -23,6 +23,7 @@ v 3.1 (integration patch)\
 - Query search error checking
 - Prompt format for query search
 - Dropdown query copied into query search box for copy/edit
+- Error messages for search box query
 
 v 3.0 (implemented functionailities of v2.5 and variable name changes in .ui)\
 Features: functional features of v2.0, updated to fit selector2.doc, removed adjustable font, added placeholders for anomaly display
@@ -53,7 +54,7 @@ Features: basic draft of possible UI mockup for client meeting
 - application.ui -> file used by PyQT designer
 - application.py -> working file with UI functionailities (run this on for the application)
 
-v 0.5\
+v 0.5
 - Jup_selectors.ipynb -> Html generation using selectors in Jupyter
 - PyQt html display.py -> input folium html file, displayed in PyQt application
 
