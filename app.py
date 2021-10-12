@@ -115,7 +115,8 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.process_query(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
 
         # updates html display with new html
-        url = QtCore.QUrl.fromLocalFile("/generated_map.html")
+        #url = QtCore.QUrl.fromLocalFile("/generated_map.html")
+        url = QtCore.QUrl.fromLocalFile("/trial.html")
         self.browser.load(url)
     
     # placeholder, function generates a html based on input query

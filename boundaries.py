@@ -9,9 +9,11 @@ from shapely.ops import unary_union
 from os.path import join
 import geopandas as gpd
 from geopy.geocoders import Nominatim
-import map as mp
 import folium
 from geopandas import GeoDataFrame
+import matplotlib.pyplot as plt
+import map as mp
+import filter as filter
 
 DATA = 'crime.csv'
 LANDGATE = 'Localities_LGATE_234_WA_GDA2020_Public.geojson'
@@ -122,7 +124,11 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
     return(final_data)
 
 def choropleth(query):
-    results = mp.main(query)
+    #results, stat, png = mp.main(query)
+    #print(results)
+    #print(stat)
+    #plt.show(ax)
+    results = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 

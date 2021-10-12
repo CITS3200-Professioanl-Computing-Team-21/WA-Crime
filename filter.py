@@ -22,29 +22,29 @@ def filter(name, zone, year, mq, offence):
     # following year - it is implied. Use of integer makes for easier
     # comparison.
     sql_create_projects_table = """ CREATE TABLE IF NOT EXISTS Crime (
-                                        Suburb text NOT NULL,
-                                        Crime text NOT NULL,
-                                        Year_fn int NOT NULL,
-                                        Jul int,
-                                        Aug int,
-                                        Sep int,
-                                        Oct int,
-                                        Nov int,
-                                        Dec int,
-                                        Jan int,
-                                        Feb int,
-                                        Mar int,
-                                        Apr int,
-                                        May int,
-                                        Jun int,
-                                        Annual int
+                                        suburb text NOT NULL,
+                                        crime text NOT NULL,
+                                        year_fn int NOT NULL,
+                                        jul int,
+                                        aug int,
+                                        sep int,
+                                        oct int,
+                                        nov int,
+                                        dec int,
+                                        jan int,
+                                        feb int,
+                                        mar int,
+                                        apr int,
+                                        may int,
+                                        jun int,
+                                        annual int
                                     ); """
 
     sql_create_tasks_table = """CREATE TABLE IF NOT EXISTS Localities (
-                                    Suburb text PRIMARY KEY NOT NULL,
-                                    Station text NOT NULL,
-                                    District text NOT NULL,
-                                    Region text NOT NULL
+                                    suburb text PRIMARY KEY NOT NULL,
+                                    station text NOT NULL,
+                                    district text NOT NULL,
+                                    region text NOT NULL
                                 );"""
 
     # Create a database connection
@@ -82,7 +82,7 @@ def filter(name, zone, year, mq, offence):
         mrange = str(distribution(mq))
     else:
         # We assume no more updates to the calendar system
-        mq = "Jul-Jun"
+        mq = "jul-jun"
         mrange = str(distribution(mq))
 
     # If there is an 'all' type input assume all year range.
@@ -99,13 +99,13 @@ def filter(name, zone, year, mq, offence):
     # query += "SELECT Crime." + zone + ", " + mrange + " AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb) WHERE Crime.Suburb = '" + name + "'"
     
     # Determines subordinate zone type for selection and grouping (This feature may be made redundant in the future in favour of a custom zone selection)
-    zones = ['Suburb', 'Station', 'District', 'Region']
+    zones = ['suburb', 'station', 'district', 'region']
     sub_zone = ""
 
     # All selection for zone defaults to suburb, also resets sub_zone and name to 'all' so that all suburbs are selected.
-    if zone == 'all' or zone == 'Suburb':
-        zone = 'Suburb'
-        sub_zone = 'Suburb'
+    if zone == 'all' or zone == 'suburb':
+        zone = 'suburb'
+        sub_zone = 'suburb'
         name = 'all'
 
     # When name is 'all', we return all of that zone type, therefore no subzones. When name is not all, we return only the named zone and it's subzones.
@@ -119,7 +119,7 @@ def filter(name, zone, year, mq, offence):
 
     print(y1, y2, sub_zone, zone, mrange, offence, name)
 
-    query += "SELECT Localities." + sub_zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
+    query += "SELECT Localities." + sub_zone + ", SUM(" + mrange + ") AS total FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
     # CURRENT PROBLEM. LEAKS AROUND YEAR_FN REQUIRING YOU INCLUDE PREVIOUS OR FOLLOWING YEARS
     if name != 'all' or offence != 'all' or year != 'all':
         query += " WHERE"
@@ -136,14 +136,14 @@ def filter(name, zone, year, mq, offence):
         if year != 'all':
             if includeand:
                 query += " AND"
-            query += " Year_fn >= " + y1 + " AND Year_fn < " + y2
+            query += " year_fn >= " + y1 + " AND year_fn < " + y2
     # if sub_zone == 'Suburb':
     #     query += " GROUP BY Year_fn, Localities." + sub_zone + " ORDER BY Localities." + sub_zone
     # else:
     #     query += " GROUP BY Year_fn, " + sub_zone + " ORDER BY " + sub_zone
 
     # Don't group by year
-    if sub_zone == 'Suburb':
+    if sub_zone == 'suburb':
         query += " GROUP BY Localities." + sub_zone + " ORDER BY Localities." + sub_zone
     else:
         query += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
@@ -174,7 +174,7 @@ def filter(name, zone, year, mq, offence):
 def distribution(mq):
     # Collects the months whose data are to be summed, scans from m0 to m1 collecting
     # months in between.
-    months = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+    months = ["jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun"]
     query = ""
     if mq != 'all':
         # Quarters not done yet
@@ -188,7 +188,7 @@ def distribution(mq):
         # Check if it is a range, meaning split by - was successful
         if len(mq) > 1:
 
-            if mq[0][0] == 'Q':
+            if mq[0][0] == 'q':
                 # Calculate starting month
                 mq[0] = months[(int(mq[0][1])-1)*3]
                 mq[1] = months[(int(mq[1][1]))*3-1]
@@ -208,7 +208,7 @@ def distribution(mq):
             return mrange
         else:
             # Assuming no months will ever start with Q
-            if mq[0][0] == 'Q':
+            if mq[0][0] == 'q':
                 # Calculate starting month
                 start = months[(int(mq[0][1])-1)*3]
                 mi = months.index(start)
@@ -287,11 +287,12 @@ def fill_table(c, file_name, table):
 # Converts list to pandas data frame    
 def convert(list):
     df = pandas.DataFrame(list, columns = ['name', 'sum'])
+    print(df)
     return df
 
 
 # Name, zone, year, month/quarter, crime
-filter('Mandurah', 'Station', 'all-2016-2017', 'Jul-Oct', 'Stealing') 
+#filter('Mandurah', 'Station', 'all-2016-2017', 'Jul-Oct', 'Stealing') 
 
 #perth district = 92571, wembley station = 34120
 
