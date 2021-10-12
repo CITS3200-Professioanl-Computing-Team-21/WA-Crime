@@ -6,6 +6,14 @@ import csv, sqlite3, os, pandas
 
 def filter(name, zone, year, mq, offence):
 
+    # Stupid inconsistency between files
+    year = year.lower()
+    if mq == 'All':
+        mq = mq.lower()
+    elif mq[0] == "-":
+        mq = mq[1:]
+    offence = offence.lower()
+    name = name.lower()
     database = "data.db"
     crime_file = "crime.csv"
     localities_file = "localities.csv"
@@ -67,18 +75,26 @@ def filter(name, zone, year, mq, offence):
     mrange = ""
     y1, y2 = 0, 0
     
-    if mq != 'all':
+    print(mq)
+
+    if str(mq).find('all') == -1:
+        # If it is a single month entry, i.e. no - found, mrange is just that one month
         mrange = str(distribution(mq))
     else:
         # We assume no more updates to the calendar system
         mq = "Jul-Jun"
         mrange = str(distribution(mq))
 
-    if year != 'all':
+    # If there is an 'all' type input assume all year range.
+    # print(year)
+    if str(year).find('all') == -1:
         y1, y2 = yrange(year)
     else:
         # In-built Y3K bug
-        y1, y2 = 0, 3000
+        y1, y2 = "0", "3000"
+    # If year order came in the wrong way
+    if y1 > y2:
+        y2, y1 = y1, y2
     # query += "SELECT " + zone + ", " + mrange + " AS Total FROM Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb"
     # query += "SELECT Crime." + zone + ", " + mrange + " AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb) WHERE Crime.Suburb = '" + name + "'"
     
@@ -101,6 +117,8 @@ def filter(name, zone, year, mq, offence):
     # Below is for a more descriptive query result
     # query += "SELECT Localities." + sub_zone + ", " + "Crime, Year_fn, Localities." + zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
 
+    print(y1, y2, sub_zone, zone, mrange, offence, name)
+
     query += "SELECT Localities." + sub_zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
     # CURRENT PROBLEM. LEAKS AROUND YEAR_FN REQUIRING YOU INCLUDE PREVIOUS OR FOLLOWING YEARS
     if name != 'all' or offence != 'all' or year != 'all':
@@ -119,10 +137,16 @@ def filter(name, zone, year, mq, offence):
             if includeand:
                 query += " AND"
             query += " Year_fn >= " + y1 + " AND Year_fn < " + y2
+    # if sub_zone == 'Suburb':
+    #     query += " GROUP BY Year_fn, Localities." + sub_zone + " ORDER BY Localities." + sub_zone
+    # else:
+    #     query += " GROUP BY Year_fn, " + sub_zone + " ORDER BY " + sub_zone
+
+    # Don't group by year
     if sub_zone == 'Suburb':
-        query += " GROUP BY Year_fn, Localities." + sub_zone + " ORDER BY Localities." + sub_zone
+        query += " GROUP BY Localities." + sub_zone + " ORDER BY Localities." + sub_zone
     else:
-        query += " GROUP BY Year_fn, " + sub_zone + " ORDER BY " + sub_zone
+        query += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
 
     # # All crime type all year type
     # query += "SELECT Localities." + sub_zone + ", " + "Crime, Year_fn, Localities." + zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
@@ -138,11 +162,13 @@ def filter(name, zone, year, mq, offence):
     output = []
     for i in c.fetchall():
         output.append(list(i))
-        print(j, i)
+        # print(j, i)
         j += 1
     # print(c.fetchall())
 
-    print(query)
+    # print(query)
+    output = convert(output)
+    # print(output)
     return output
 
 def distribution(mq):
@@ -152,28 +178,65 @@ def distribution(mq):
     query = ""
     if mq != 'all':
         # Quarters not done yet
-        if mq[0] == 'Q':
-            e = 4
         mrange = "("
-        m0 = mq[0:3]
-        # Index of first month so we can iterate through list
-        mi = months.index(m0)
-        m1 = mq[4:]
-        curr = m0
-        while curr != m1:
-            mrange += curr + "+"
-            # If Sep-Aug we modulo past Dec until we reach Aug
-            mi = (mi + 1) % 12
-            curr = months[mi]
-        # Closes the range with bracket
-        mrange += curr + ')'
-        # print(mrange)
-        return mrange
+        # if mq[0] == 'q':
+        #     if str(mq).find("-") != -1:
+        #         mq = mq.split("-")
 
+        mq = str(mq).split("-")
+
+        # Check if it is a range, meaning split by - was successful
+        if len(mq) > 1:
+
+            if mq[0][0] == 'Q':
+                # Calculate starting month
+                mq[0] = months[(int(mq[0][1])-1)*3]
+                mq[1] = months[(int(mq[1][1]))*3-1]
+
+            m0 = mq[0]
+            m1 = mq[1]
+            mi = months.index(m0)
+            curr = m0
+            while curr != m1:
+                mrange += curr + "+"
+                # If Sep-Aug we modulo past Dec until we reach Aug
+                mi = (mi + 1) % 12
+                curr = months[mi]
+            # Closes the range with bracket
+            mrange += curr + ')'
+            # print(mrange)
+            return mrange
+        else:
+            # Assuming no months will ever start with Q
+            if mq[0][0] == 'Q':
+                # Calculate starting month
+                start = months[(int(mq[0][1])-1)*3]
+                mi = months.index(start)
+                end = months[int(mq[0][1])*3-1]
+                while start != end:
+                    mrange += start + "+"
+                    # If Sep-Aug we modulo past Dec until we reach Aug
+                    mi = (mi + 1) % 12
+                    start = months[mi]
+                mrange += start + ')'
+                return mrange
+            else:
+                return mq[0]
+            
+
+        # m0 = mq[0:3]
+        # # Index of first month so we can iterate through list
+        # mi = months.index(m0)
+        # m1 = mq[4:]
+        # curr = m0
+
+
+# May be buggy for weird inputs like 'all-2013-2014' or '2013-2014-all' or 'all-all'
 def yrange(year):
     y = year.split('-')
-    print(y)
-    return y[0], y[1]
+    # print(y)
+    # Stupid selector input difference has me doing this stupidness. Format for end year 2021 is '21', so I need to infer the century and add 21 to it to get the year I want '2021'
+    return y[0], str(int(int(y[-2])/100)) + y[-1]
 
 def create_connection(db_file):
     conn = None
@@ -221,9 +284,14 @@ def fill_table(c, file_name, table):
     except:
         print("Error filling table data")
     
+# Converts list to pandas data frame    
+def convert(list):
+    df = pandas.DataFrame(list, columns = ['name', 'sum'])
+    return df
+
 
 # Name, zone, year, month/quarter, crime
-filter('Mandurah', 'Station', '2012-2017', 'Jul-Oct', 'Stealing') 
+filter('Mandurah', 'Station', 'all-2016-2017', 'Jul-Oct', 'Stealing') 
 
 #perth district = 92571, wembley station = 34120
 
