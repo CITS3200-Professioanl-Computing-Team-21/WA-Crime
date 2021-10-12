@@ -1,24 +1,24 @@
 import os
+import json
+import folium
 import numpy as np
 import pandas as pd
-import json
-import haversine as hs
-from fuzzywuzzy import process
-from shapely.geometry import Point, shape
-from shapely.ops import unary_union
-from os.path import join
 import geopandas as gpd
-from geopy.geocoders import Nominatim
-import folium
-from geopandas import GeoDataFrame
+import haversine as hs
 import matplotlib.pyplot as plt
 import map as mp
 import filter as filter
+from fuzzywuzzy import process
+from shapely.geometry import Point, shape
+from shapely.ops import unary_union
+from geopy.geocoders import Nominatim
+from geojson import Point, Feature, FeatureCollection, dump
 
-DATA = 'crime.csv'
+# constant variables conatining paths to data files
+CRIME = 'crime.csv'
 LANDGATE = 'Localities_LGATE_234_WA_GDA2020_Public.geojson'
 ZONES = 'Suburb Locality.csv'
-files = [DATA, LANDGATE, ZONES]
+FILES = [CRIME, LANDGATE, ZONES]
 
 # function - to check if required files exist
 def check_file(file):
@@ -33,7 +33,7 @@ def data_loading(crime, landgate, zones):
         landgate_data = json.load(f)
         landgate_locations = [i['properties']['name'].lower() for i in landgate_data['features']]
 
-    crime_data = pd.read_csv(DATA)
+    crime_data = pd.read_csv(CRIME)
     # selects all unique string values from first column and converts to lowercase, output = array
     crime_locations = np.char.lower(crime_data.iloc[:, 0].unique().astype('str'))
     
@@ -111,15 +111,36 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
         name = location['properties']['name'].lower()
         if name in zones['suburbs']:
             final_data['suburbs'][name] = location['geometry']
-                    
+                       
+    features_stations = []
+    features_districts = []
+    features_regions = []
     for zone_type in final_data:
         if zone_type != 'suburbs':
             for place in final_data[zone_type]:
                 polygons = []
                 for location in final_data[zone_type][place]:
                     polygons.append(shape(final_data['suburbs'][location]))
-                boundary = gpd.GeoSeries(unary_union(polygons).simplify(tolerance=0.001))
-                final_data[zone_type][place] = boundary.to_json()
+    #             boundary = gpd.GeoSeries(unary_union(polygons).simplify(tolerance=0.001))
+                polygon2 = unary_union(polygons).simplify(tolerance=0.001)
+    #             polygon = MultiPolygon(boundary)
+                if zone_type == 'stations':
+                    features_stations.append(Feature(geometry=polygon2, properties={'zone_type': zone_type, 'name': place}))
+                if zone_type == 'districts':
+                    features_districts.append(Feature(geometry=polygon2, properties={'zone_type': zone_type, 'name': place}))
+                if zone_type == 'regions':
+                    features_regions.append(Feature(geometry=polygon2, properties={'zone_type': zone_type, 'name': place}))
+    #             final_data[zone_type][place] = boundary.to_json()
+
+    feature_collection_stations = FeatureCollection(features_stations)
+    with open('stations.geojson', 'w') as f:
+        dump(feature_collection_stations, f)
+    feature_collection_districts = FeatureCollection(features_districts)
+    with open('districts.geojson', 'w') as f:
+        dump(feature_collection_districts, f)
+    feature_collection_regions = FeatureCollection(features_regions)
+    with open('regions.geojson', 'w') as f:
+        dump(feature_collection_regions, f)
 
     return(final_data)
 
@@ -132,19 +153,37 @@ def choropleth(query):
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
-    data = gpd.read_file(LANDGATE)
+    if query[1] == 'suburb' or 'station':
+        data = gpd.read_file(LANDGATE)
+        starting_zoom = 12
+    if query[1] == 'district':
+        data = gpd.read_file('/zones/stations.geojson')
+        starting_zoom = 9
+    if query[1] == 'region':
+        data = gpd.read_file('/zones/districts.geojson')
+        starting_zoom = 6
     data['name'] = data['name'].str.upper()
     for_plotting = results.merge(data, left_on = 'name', right_on = 'name')
-    merged = GeoDataFrame(for_plotting)
+    merged = gpd.GeoDataFrame(for_plotting)
     geo_j = merged.to_json()
 
-    #Creating a map object for choropleth map
-    #Starting location coordinates [lat, long] set to Perth
+    # finding coordinates of starting location
+    loc = Nominatim(user_agent="GetLoc")
+    try:
+        getLoc = loc.geocode(query[0]+', WA, Australia')
+        starting_point = [getLoc.latitude, getLoc.longitude]
+    except: 
+    # starting location coordinates [lat, long] set to Perth if no coordinates found
+        starting_point = [-32, 116]
+    
+    # creating a map object for choropleth map
     choropleth = folium.Map(
-        location=[-32, 116],
+        location=starting_point,
         tiles='https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-        zoom_start=12,
-        attr='Trial Heatmap')
+        zoom_start=starting_zoom,
+        max_zoom=15,
+        min_zoom=3,
+        attr='Crime Heatmap')
 
     #Creating choropleth map object with key on suburb name
     folium.Choropleth(
@@ -189,10 +228,16 @@ def choropleth(query):
     choropleth.keep_in_front(NIL)
     folium.LayerControl().add_to(choropleth)
 
+    # folium.Marker(
+    #     location=starting_point, 
+    #     icon=folium.Icon(color="black",icon="map-pin", prefix='fa',
+    #     popup=query[0])
+    # ).add_to(choropleth)
+
     choropleth.save('trial.html')
     
 def main():
-    for file in files:
+    for file in FILES:
         if check_file(file) == None:
             return None
     # landgate_data, landgate_locations, crime_locations, zones_data, zones = data_loading(DATA, LANDGATE, ZONES)
