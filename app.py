@@ -27,8 +27,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         super(MainWindow,self).__init__()
         self.setupUi(self)
         self.browser = QWebEngineView()
-        self.browser.load(QUrl("https://www.google.com"))
-        #self.browser.load(QtCore.QUrl.fromLocalFile("/regions.html"))
+        self.browser.load(QtCore.QUrl.fromLocalFile("/default_map.html"))
         hboxlayout = QHBoxLayout(self.frame)
         hboxlayout.addWidget(self.browser)
 
@@ -115,7 +114,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
 
         # updates html display with new html
-        url = QtCore.QUrl.fromLocalFile("/regions.html")
+        url = QtCore.QUrl.fromLocalFile("/generated_map.html")
         self.browser.load(url)
     
     # placeholder, function generates a html based on input query
