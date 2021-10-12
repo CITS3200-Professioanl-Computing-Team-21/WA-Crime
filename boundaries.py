@@ -11,6 +11,7 @@ import geopandas as gpd
 from geopy.geocoders import Nominatim
 import map as mp
 import folium
+from geopandas import GeoDataFrame
 
 DATA = 'crime.csv'
 LANDGATE = 'Localities_LGATE_234_WA_GDA2020_Public.geojson'
@@ -30,7 +31,7 @@ def data_loading(crime, landgate, zones):
         landgate_data = json.load(f)
         landgate_locations = [i['properties']['name'].lower() for i in landgate_data['features']]
 
-    crime_data = pd.read_csv(crime)
+    crime_data = pd.read_csv(DATA)
     # selects all unique string values from first column and converts to lowercase, output = array
     crime_locations = np.char.lower(crime_data.iloc[:, 0].unique().astype('str'))
     
@@ -120,15 +121,20 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
 
     return(final_data)
 
-def chloropleth(query):
+def choropleth(query):
     results = mp.main(query)
-    print(results)
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
+    data = gpd.read_file(LANDGATE)
+    data['name'] = data['name'].str.upper()
+    for_plotting = results.merge(data, left_on = 'name', right_on = 'name')
+    merged = GeoDataFrame(for_plotting)
+    geo_j = merged.to_json()
+
     #Creating a map object for choropleth map
     #Starting location coordinates [lat, long] set to Perth
-    chloropleth = folium.Map(
+    choropleth = folium.Map(
         location=[-32, 116],
         tiles='https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
         zoom_start=12,
@@ -136,7 +142,7 @@ def chloropleth(query):
 
     #Creating choropleth map object with key on suburb name
     folium.Choropleth(
-        geo_data = LANDGATE, #Assign geo_data to your geojson file
+        geo_data = geo_j, #Assign geo_data to your geojson file
         name = "WA Crime Heat Map",
         data = results, #Assign dataset of interest
         columns = ['name', 'log'], #Assign columns in the dataset for plotting
@@ -145,7 +151,7 @@ def chloropleth(query):
         fill_opacity = 0.9,
         line_opacity = 0.5,
         bins = 9,
-        legend_name = 'legend').add_to(chloropleth)
+        legend_name = 'legend').add_to(choropleth)
     
     #Creating style_function
     style_function = lambda x: {
@@ -163,7 +169,7 @@ def chloropleth(query):
 
     #Creating popup tooltip object
     NIL = folium.features.GeoJson(
-        LANDGATE,
+        geo_j,
         style_function=style_function, 
         control=False,
         highlight_function=highlight_function, 
@@ -173,11 +179,11 @@ def chloropleth(query):
             style=("background-color: white; color: #333333; font-family: arial; font-size: 12px; padding: 10px;")))
 
     #Adding tooltip object to the map
-    chloropleth.add_child(NIL)
-    chloropleth.keep_in_front(NIL)
-    folium.LayerControl().add_to(chloropleth)
+    choropleth.add_child(NIL)
+    choropleth.keep_in_front(NIL)
+    folium.LayerControl().add_to(choropleth)
 
-    chloropleth.save('trial.html')
+    choropleth.save('trial.html')
     
 def main():
     for file in files:
@@ -188,7 +194,7 @@ def main():
     # missing_landgate = missing_locations(zones_data, zones, missing2)
     # changes = assign_missing_boundaries(missing_landgate, landgate_data, changes, crime_locations)
     # final_data = zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_locations, zones_data)
-    chloropleth(query)
+    choropleth(query)
     # return final_data
 
 if __name__ == '__main__':
