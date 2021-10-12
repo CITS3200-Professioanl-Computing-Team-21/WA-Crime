@@ -5,6 +5,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5 import QtWidgets, QtCore
 from ui import Ui_MainWindow
+#import boundaries
 
 # IDENTIFIERS
 STATION = 0
@@ -111,16 +112,17 @@ class MainWindow(QMainWindow,Ui_MainWindow):
     # generates a new html and displays it
     def updatehtml(self):
         # generates new html (placeholder for front end)
-        self.stub(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
+        self.process_query(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
 
         # updates html display with new html
         url = QtCore.QUrl.fromLocalFile("/generated_map.html")
         self.browser.load(url)
     
     # placeholder, function generates a html based on input query
-    def stub(self,name, zone_type, year, period, crime):
+    def process_query(self,name, zone_type, year, period, crime):
         print("Name, Zone_type, Year, Period, Crime")
         print(name, zone_type, year, period, crime)
+        #output = boundaries.choropleth([name, zone_type, year, period, crime])
 
     # callback function that redisplays new map based on selectors
     # src is the source(dropdown) that cause the update
