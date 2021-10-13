@@ -71,7 +71,8 @@ def filter(name, zone, year, mq, offence):
         return
     
     # Build query in stages
-    query = ""
+    query0 = ""
+    query1 = ""
     mrange = ""
     y1, y2 = 0, 0
     
@@ -119,34 +120,69 @@ def filter(name, zone, year, mq, offence):
 
     print(y1, y2, sub_zone, zone, mrange, offence, name)
 
-    query += "SELECT Localities." + sub_zone + ", SUM(" + mrange + ") AS total FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
+    allmonth = "jul + aug + sep + oct + nov + dec + jan + feb + mar + apr + may + jun"
+
+    # We only show every month if we have a narrow year search less than 4 years, otherwise show overall year trends
+    query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, jul, aug, sep, oct, nov, dec, jan, feb, mar, apr, may, jun, " + allmonth + " FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
     # CURRENT PROBLEM. LEAKS AROUND YEAR_FN REQUIRING YOU INCLUDE PREVIOUS OR FOLLOWING YEARS
     if name != 'all' or offence != 'all' or year != 'all':
-        query += " WHERE"
+        query0 += " WHERE"
         # includeand to check if query has multiple conditions, so that "AND" can be appended to include them
         includeand = False
         if name != 'all':
-            query += " Localities." + zone + " = '" + name.lower() + "'"
+            query0 += " Localities." + zone + " = '" + name.lower() + "'"
             includeand = True
         if offence != 'all':
             if includeand:
-                query += " AND"
-            query += " Crime = '" + offence.lower() + "'"
+                query0 += " AND"
+            query0 += " Crime = '" + offence.lower() + "'"
             includeand = True
         if year != 'all':
             if includeand:
-                query += " AND"
-            query += " year_fn >= " + y1 + " AND year_fn < " + y2
+                query0 += " AND"
+            query0 += " year_fn >= " + y1 + " AND year_fn < " + y2
+    # if int(y2) - int(y1) > 4:
+    #     query0 += " GROUP BY year_fn, Localities." + sub_zone + " ORDER BY Localities." + sub_zone
     # if sub_zone == 'Suburb':
     #     query += " GROUP BY Year_fn, Localities." + sub_zone + " ORDER BY Localities." + sub_zone
     # else:
     #     query += " GROUP BY Year_fn, " + sub_zone + " ORDER BY " + sub_zone
 
-    # Don't group by year
-    if sub_zone == 'suburb':
-        query += " GROUP BY Localities." + sub_zone + " ORDER BY Localities." + sub_zone
-    else:
-        query += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
+    # # Don't group by year
+    # if sub_zone == 'suburb':
+    #     query += " GROUP BY Localities." + sub_zone + " ORDER BY Localities." + sub_zone
+    # else:
+    #     query += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
+
+    # OLD CODE OLD CODE
+    # query += "SELECT Localities." + sub_zone + ", SUM(" + mrange + ") AS total FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
+    # # CURRENT PROBLEM. LEAKS AROUND YEAR_FN REQUIRING YOU INCLUDE PREVIOUS OR FOLLOWING YEARS
+    # if name != 'all' or offence != 'all' or year != 'all':
+    #     query += " WHERE"
+    #     # includeand to check if query has multiple conditions, so that "AND" can be appended to include them
+    #     includeand = False
+    #     if name != 'all':
+    #         query += " Localities." + zone + " = '" + name.lower() + "'"
+    #         includeand = True
+    #     if offence != 'all':
+    #         if includeand:
+    #             query += " AND"
+    #         query += " Crime = '" + offence.lower() + "'"
+    #         includeand = True
+    #     if year != 'all':
+    #         if includeand:
+    #             query += " AND"
+    #         query += " year_fn >= " + y1 + " AND year_fn < " + y2
+    # # if sub_zone == 'Suburb':
+    # #     query += " GROUP BY Year_fn, Localities." + sub_zone + " ORDER BY Localities." + sub_zone
+    # # else:
+    # #     query += " GROUP BY Year_fn, " + sub_zone + " ORDER BY " + sub_zone
+
+    # # Don't group by year
+    # if sub_zone == 'suburb':
+    #     query += " GROUP BY Localities." + sub_zone + " ORDER BY Localities." + sub_zone
+    # else:
+    #     query += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
 
     # # All crime type all year type
     # query += "SELECT Localities." + sub_zone + ", " + "Crime, Year_fn, Localities." + zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
@@ -154,22 +190,52 @@ def filter(name, zone, year, mq, offence):
     # query += " WHERE Localities." + zone + " = '" + name.lower() + "'"
     # query += " GROUP BY Year_fn, " + sub_zone + " ORDER BY " + sub_zone
 
-    print(query)
+    # conn.commit()
+
+    print(query0)
     
     # Print output to command line
-    c.execute(query)
+    c.execute(query0)
+    
+    # Select from temp table
+    c.execute("SELECT * FROM unfiltered")
     j = 0
-    output = []
+    unfiltered = []
     for i in c.fetchall():
-        output.append(list(i))
+        unfiltered.append(list(i))
         # print(j, i)
         j += 1
     # print(c.fetchall())
 
     # print(query)
-    output = convert(output)
-    # print(output)
-    return output
+    unfiltered = convert(unfiltered, ["name", "year_fn", "jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun", "total"])
+    # unfiltered = convert(unfiltered, ["name", "year_fn", "total"])
+    # print(unfiltered)
+    # return unfiltered
+
+    # Following is to apply final filters to data
+    if mrange != allmonth:
+        query1 += "SELECT " + sub_zone + ", SUM(" + mrange + ") AS total FROM unfiltered"
+    else:
+        query1 += "SELECT " + sub_zone + ", total FROM unfiltered"
+    query1 += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
+    print(query1)
+    c.execute(query1)
+    j = 0
+    filtered = []
+    for i in c.fetchall():
+        filtered.append(list(i))
+        # print(j, i)
+        j += 1
+    filtered = convert(filtered, ["name", "sum"])
+
+    graphs = []
+    anomalies = []
+    # graphs, anomalies = statistics(unfiltered)
+    # return filtered, graphs, anomalies
+    return filtered
+
+    
 
 def distribution(mq):
     # Collects the months whose data are to be summed, scans from m0 to m1 collecting
@@ -285,14 +351,14 @@ def fill_table(c, file_name, table):
         print("Error filling table data")
     
 # Converts list to pandas data frame    
-def convert(list):
-    df = pandas.DataFrame(list, columns = ['name', 'sum'])
+def convert(list, cols):
+    df = pandas.DataFrame(list, columns = cols)
     print(df)
     return df
 
 
 # Name, zone, year, month/quarter, crime
-#filter('Mandurah', 'Station', 'all-2016-2017', 'Jul-Oct', 'Stealing') 
+filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') 
 
 #perth district = 92571, wembley station = 34120
 
