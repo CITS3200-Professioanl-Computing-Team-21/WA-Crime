@@ -231,9 +231,10 @@ def filter(name, zone, year, mq, offence):
 
     graphs = []
     anomalies = []
+    anomalies = convert(anomalies, ["name", "stat"])
     # graphs, anomalies = statistics(unfiltered)
     # return filtered, graphs, anomalies
-    return filtered
+    return filtered, anomalies
 
     
 
