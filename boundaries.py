@@ -157,15 +157,16 @@ def choropleth(query):
         data = gpd.read_file(LANDGATE)
         starting_zoom = 12
     if query[1] == 'district':
-        data = gpd.read_file('/zones/stations.geojson')
+        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/stations.geojson')
         starting_zoom = 9
     if query[1] == 'region':
-        data = gpd.read_file('/zones/districts.geojson')
+        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/districts.geojson')
         starting_zoom = 6
     data['name'] = data['name'].str.upper()
-    for_plotting = results.merge(data, left_on = 'name', right_on = 'name')
-    merged = gpd.GeoDataFrame(for_plotting)
-    geo_j = merged.to_json()
+    # for_plotting = results.merge(data, left_on = 'name', right_on = 'name')
+    merged2 = data.merge(results,on="name")
+    # merged = gpd.GeoDataFrame(for_plotting)
+    # geo_j = merged.to_json()
 
     # finding coordinates of starting location
     loc = Nominatim(user_agent="GetLoc")
@@ -187,9 +188,9 @@ def choropleth(query):
 
     #Creating choropleth map object with key on suburb name
     folium.Choropleth(
-        geo_data = geo_j, #Assign geo_data to your geojson file
+        geo_data = merged2, #Assign geo_data to your geojson file
         name = "WA Crime Heat Map",
-        data = results, #Assign dataset of interest
+        data = merged2, #Assign dataset of interest
         columns = ['name', 'log'], #Assign columns in the dataset for plotting
         key_on = 'feature.properties.name', #Assign the key that geojson uses to connect with dataset
         fill_color = 'YlOrRd',
@@ -214,13 +215,13 @@ def choropleth(query):
 
     #Creating popup tooltip object
     NIL = folium.features.GeoJson(
-        geo_j,
+        merged2,
         style_function=style_function, 
         control=False,
         highlight_function=highlight_function, 
         tooltip=folium.features.GeoJsonTooltip(
-            fields=['name'],
-            aliases=['name'],
+            fields=['name', 'postcode', 'land_area','sum'],
+            aliases=['Name', 'Postcode', 'Land Area', query[-1].upper()+' Frequency'],
             style=("background-color: white; color: #333333; font-family: arial; font-size: 12px; padding: 10px;")))
 
     #Adding tooltip object to the map
@@ -228,11 +229,11 @@ def choropleth(query):
     choropleth.keep_in_front(NIL)
     folium.LayerControl().add_to(choropleth)
 
-    # folium.Marker(
-    #     location=starting_point, 
-    #     icon=folium.Icon(color="black",icon="map-pin", prefix='fa',
-    #     popup=query[0])
-    # ).add_to(choropleth)
+    folium.Marker(
+        location=starting_point, 
+        icon=folium.Icon(color="blue",icon="map-pin", prefix='fa'),
+        popup=folium.Popup(query[0].upper()),
+    ).add_to(choropleth)
 
     choropleth.save('trial.html')
     
