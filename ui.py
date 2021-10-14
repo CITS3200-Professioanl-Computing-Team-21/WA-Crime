@@ -752,21 +752,21 @@ class Ui_MainWindow(object):
         self.verticalLayout_6.addItem(spacerItem5)
         self.horizontalLayout_11 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_11.setObjectName("horizontalLayout_11")
-        self.Screenshot_pushButton_2 = QtWidgets.QPushButton(self.layoutWidget1)
+        self.Summary_pushButton = QtWidgets.QPushButton(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.Screenshot_pushButton_2.sizePolicy().hasHeightForWidth())
-        self.Screenshot_pushButton_2.setSizePolicy(sizePolicy)
-        self.Screenshot_pushButton_2.setMinimumSize(QtCore.QSize(340, 65))
+        sizePolicy.setHeightForWidth(self.Summary_pushButton.sizePolicy().hasHeightForWidth())
+        self.Summary_pushButton.setSizePolicy(sizePolicy)
+        self.Summary_pushButton.setMinimumSize(QtCore.QSize(340, 65))
         font = QtGui.QFont()
         font.setFamily("微软雅黑")
         font.setPointSize(1)
         font.setBold(False)
         font.setItalic(False)
         font.setWeight(50)
-        self.Screenshot_pushButton_2.setFont(font)
-        self.Screenshot_pushButton_2.setStyleSheet("QPushButton{\n"
+        self.Summary_pushButton.setFont(font)
+        self.Summary_pushButton.setStyleSheet("QPushButton{\n"
 "background-color:rgb(3, 66, 154);\n"
 "color:white;\n"
 "border-radius:8px;\n"
@@ -779,8 +779,8 @@ class Ui_MainWindow(object):
 "color:black;\n"
 "border-radius:8px\n"
 "}")
-        self.Screenshot_pushButton_2.setObjectName("Screenshot_pushButton_2")
-        self.horizontalLayout_11.addWidget(self.Screenshot_pushButton_2)
+        self.Summary_pushButton.setObjectName("Summary_pushButton")
+        self.horizontalLayout_11.addWidget(self.Summary_pushButton)
         self.verticalLayout_6.addLayout(self.horizontalLayout_11)
         spacerItem6 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout_6.addItem(spacerItem6)
@@ -1352,7 +1352,7 @@ class Ui_MainWindow(object):
                                                 "border:none;}"
                                                 "")
         self.add_shadow1(self.Screenshot_pushButton)
-        self.add_shadow1(self.Screenshot_pushButton_2)
+        self.add_shadow1(self.Summary_pushButton)
         self.add_shadow1(self.groupBox_2)
         # self.add_shadow1(self.groupBox_3)
         self.add_shadow1(self.lineEdit)
@@ -1391,8 +1391,8 @@ class Ui_MainWindow(object):
         self.label_20.setText(_translate("MainWindow", "Yearly"))
         self.label_21.setText(_translate("MainWindow", "Monthly"))
         self.label_22.setText(_translate("MainWindow", "Quarterly"))
-        self.label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:14pt; font-weight:600; color:#ffffff;\">frame 1</span></p></body></html>"))
-        self.Screenshot_pushButton_2.setText(_translate("MainWindow", "Summary"))
+        self.label.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:14pt; font-weight:600; color:#ffffff;\">Statistics</span></p></body></html>"))
+        self.Summary_pushButton.setText(_translate("MainWindow", "Summary"))
         self.Screenshot_pushButton.setText(_translate("MainWindow", "Export"))
     def add_shadow1(self, button):
         # add shadow
