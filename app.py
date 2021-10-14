@@ -4,7 +4,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5 import QtWidgets, QtCore
-from ui import Ui_MainWindow
+from UI3_5 import Ui_MainWindow
 #import boundaries
 
 # IDENTIFIERS
@@ -28,19 +28,23 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         super(MainWindow,self).__init__()
         self.setupUi(self)
         self.browser = QWebEngineView()
-        self.browser.load(QtCore.QUrl.fromLocalFile("/default_map.html"))
+        self.browser.load(QtCore.QUrl.fromLocalFile("/stations.html"))
         hboxlayout = QHBoxLayout(self.frame)
         hboxlayout.addWidget(self.browser)
+        # self.browser = QWebEngineView()
+        # self.browser.load(QUrl('https://www.google.com'))
+        # hboxlayout = QHBoxLayout(self.frame)
+        # hboxlayout.addWidget(self.browser)
 
-        # export button
-        self.Search_pushButton.clicked.connect(self.query)
+        # export button 
+        # self.Search_pushButton.clicked.connect(self.query)
         self.Screenshot_pushButton.clicked.connect(self.screenshot)
 
         # search box prompt
         self.lineEdit.setPlaceholderText("Name,Zone_type,Year,Period,Crime")
 
         # initialises combo boxes options from csv in ./config
-        self.Station_comboBox.addItems(self.readfile("stations.csv"))
+        self.Station_comboxBox.addItems(self.readfile("stations.csv"))
         self.District_comboBox.addItems(self.readfile("districts.csv"))
         self.Region_comboBox.addItems(self.readfile("regions.csv"))
         self.Suburb_comboBox.addItems(self.readfile("suburbs.csv"))
@@ -61,7 +65,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.cache_year = "all"
         self.cache_period = "all"
         self.cache_crime = "all"
-        self.Station_comboBox.setCurrentIndex(-1)
+        self.Station_comboxBox.setCurrentIndex(-1)
         self.District_comboBox.setCurrentIndex(-1)
         self.Suburb_comboBox.setCurrentIndex(-1)
         self.Year_comboBox_2.setCurrentIndex(-1)
@@ -71,9 +75,9 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Monthly_comboBox_2.setCurrentIndex(-1)
 
         # make Zone and Crime combo boxes searchable
-        self.Station_comboBox.setEditable(True)
-        self.Station_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
-        self.Station_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.Station_comboxBox.setEditable(True)
+        self.Station_comboxBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.Station_comboxBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
         self.District_comboBox.setEditable(True)
         self.District_comboBox.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
         self.District_comboBox.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
@@ -92,7 +96,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Crime_comboBox.currentIndexChanged.connect(lambda : self.generate_map(CRIME))
         self.Region_comboBox.currentIndexChanged.connect(lambda : self.generate_map(REGION))
         self.District_comboBox.currentIndexChanged.connect(lambda : self.generate_map(DISTRICT))
-        self.Station_comboBox.currentIndexChanged.connect(lambda : self.generate_map(STATION))
+        self.Station_comboxBox.currentIndexChanged.connect(lambda : self.generate_map(STATION))
         self.Suburb_comboBox.currentIndexChanged.connect(lambda : self.generate_map(SUBURB))
         self.Year_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(YEAR))
         self.Year_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(YEAR2))
@@ -100,6 +104,26 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Monthly_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(MONTH2))
         self.Quarterly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(QUARTER))
         self.Quarterly_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(QUARTER2))
+
+        #Style initialize
+        self.initDrag()
+
+    def add_shadow1(self, button):
+        # add shadow
+        self.effect_shadow = QGraphicsDropShadowEffect(self)
+        self.effect_shadow.setOffset(-5, 5)  # shift
+        self.effect_shadow.setBlurRadius(17)  # shadow radius
+        self.effect_shadow.setColor(Qt.gray)  # shadow color
+        button.setGraphicsEffect(self.effect_shadow) # inherit to button window
+
+
+
+    def slot_max_or_recv(self):
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+
 
     # Reads csv file from config, outputs a list of names 
     # filename is the name of file
@@ -115,7 +139,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.process_query(self.cache_zone, self.cache_zone_type, self.cache_year, self.cache_period, self.cache_crime)
 
         # updates html display with new html
-        url = QtCore.QUrl.fromLocalFile("/generated_map.html")
+        url = QtCore.QUrl.fromLocalFile("/regions.html")
         self.browser.load(url)
     
     # placeholder, function generates a html based on input query
@@ -133,7 +157,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             # zone selectors
             if src == STATION:
                 self.cache_zone_type = "station"
-                self.cache_zone = self.Station_comboBox.currentText() # cache current selection for html generation
+                self.cache_zone = self.Station_comboxBox.currentText() # cache current selection for html generation
                 self.update = False                         # setCurrentIndex calls the callback, lock prevent looping
                 self.District_comboBox.setCurrentIndex(-1)  # deselect other selectors 
                 self.Region_comboBox.setCurrentIndex(-1)
@@ -143,7 +167,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.cache_zone_type = "district"
                 self.cache_zone = self.District_comboBox.currentText()
                 self.update = False
-                self.Station_comboBox.setCurrentIndex(-1)
+                self.Station_comboxBox.setCurrentIndex(-1)
                 self.Region_comboBox.setCurrentIndex(-1)
                 self.Suburb_comboBox.setCurrentIndex(-1)
                 self.update = True
@@ -152,7 +176,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.cache_zone = self.Region_comboBox.currentText()
                 self.update = False
                 self.District_comboBox.setCurrentIndex(-1)
-                self.Station_comboBox.setCurrentIndex(-1)
+                self.Station_comboxBox.setCurrentIndex(-1)
                 self.Suburb_comboBox.setCurrentIndex(-1)
                 self.update = True
             elif src == SUBURB:
@@ -160,7 +184,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                 self.cache_zone = self.Suburb_comboBox.currentText()
                 self.update = False
                 self.District_comboBox.setCurrentIndex(-1)
-                self.Station_comboBox.setCurrentIndex(-1)
+                self.Station_comboxBox.setCurrentIndex(-1)
                 self.Region_comboBox.setCurrentIndex(-1)
                 self.update = True
 
@@ -265,17 +289,17 @@ class MainWindow(QMainWindow,Ui_MainWindow):
             return False
         else:
             if text[1] == "station":
-                if (self.Station_comboBox.findText(text[0]) == -1):
+                if (self.Station_comboxBox.findText(text[0]) == -1):
                     QMessageBox.warning(self,"Error","Invalid station")
                     return False
                 else:
                     # updates corresponding dropdown and caches new value
                     self.update = False
-                    self.Station_comboBox.setCurrentIndex(self.Station_comboBox.findText(text[0]))
+                    self.Station_comboxBox.setCurrentIndex(self.Station_comboxBox.findText(text[0]))
                     self.District_comboBox.setCurrentIndex(-1)
                     self.Suburb_comboBox.setCurrentIndex(-1)
                     self.Region_comboBox.setCurrentIndex(-1)
-                    self.cache_zone = self.Station_comboBox.currentText()
+                    self.cache_zone = self.Station_comboxBox.currentText()
                     self.cache_zone_type = "station"
                     self.update = True
             elif text[1] == "district":
@@ -286,7 +310,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.update = False
                     self.District_comboBox.setCurrentIndex(self.District_comboBox.findText(text[0]))
                     self.Suburb_comboBox.setCurrentIndex(-1)
-                    self.Station_comboBox.setCurrentIndex(-1)
+                    self.Station_comboxBox.setCurrentIndex(-1)
                     self.Region_comboBox.setCurrentIndex(-1)
                     self.cache_zone = self.District_comboBox.currentText()
                     self.cache_zone_type = "district"
@@ -299,7 +323,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.update = False
                     self.Region_comboBox.setCurrentIndex(self.Suburb_comboBox.findText(text[0]))
                     self.District_comboBox.setCurrentIndex(-1)
-                    self.Station_comboBox.setCurrentIndex(-1)
+                    self.Station_comboxBox.setCurrentIndex(-1)
                     self.Suburb_comboBox.setCurrentIndex(-1)
                     self.cache_zone = self.Region_comboBox.currentText()
                     self.cache_zone_type = "region"
@@ -312,7 +336,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
                     self.update = False
                     self.Suburb_comboBox.setCurrentIndex(self.Suburb_comboBox.findText(text[0]))
                     self.District_comboBox.setCurrentIndex(-1)
-                    self.Station_comboBox.setCurrentIndex(-1)
+                    self.Station_comboxBox.setCurrentIndex(-1)
                     self.Region_comboBox.setCurrentIndex(-1)
                     self.cache_zone = self.Suburb_comboBox.currentText()
                     self.cache_zone_type = "suburb"
@@ -416,7 +440,652 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         screen = QApplication.primaryScreen()
         screenshot = screen.grabWindow(self.frame.winId())
         screenshot.save(fileName_choose, 'jpg')
+    def initDrag(self):
+        ############################## UI Improvement ##########################################
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.pushButton.clicked.connect(lambda: self.showMinimized())
+        self.pushButton_3.clicked.connect(lambda: self.close())
+        self.pushButton_2.clicked.connect(self.slot_max_or_recv)
+        action = QAction(self)
+        action.triggered.connect(self.query)
+        action.setIcon(QIcon('./pic\search@2x.png'))
+        # username.addAction(action, QLineEdit.TrailingPosition)
+        # Add picture and position
+        self.lineEdit.addAction(action, QLineEdit.TrailingPosition)
+        self.add_shadow1(self.Screenshot_pushButton)
+        self.add_shadow1(self.Screenshot_pushButton_2)
+        self.add_shadow1(self.groupBox_2)
+        # self.add_shadow1(self.groupBox_3)
+        self.add_shadow1(self.lineEdit)
+        # Dropdown box
+        self.add_shadow1(self.Crime_comboBox)
+        self.Crime_comboBox.setStyleSheet("QComboBox {"
+                                          "width:200px;"
+                                          "combobox-popup: 0;\n"  # scroll bar
+                                          "background-color: rgb(233, 231, 244);"
+                                          "border: 1px solid rgb(200, 200, 200);"
+                                          "border-radius: 7px"
+                                          "}\n"
 
+                                          "QComboBox:drop-down {"  # Arrow
+                                          "width:30px;  "
+                                          "height:10px; "
+                                          "border: none;  "
+                                          "subcontrol-position: right center; "  
+                                          "subcontrol-origin: padding;"
+                                          "image: url(\"pic/retangle 4(1).png\");}\n"  # alignment
+
+                                          "QComboBox:drop-down:checked{" 
+                                          "width:30px;  "
+                                          "height:10px; "
+                                          "border: none;  "
+                                          "subcontrol-position: right center; "  
+                                          "subcontrol-origin: padding;"
+                                          "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                          "QComboBox QAbstractItemView {"  
+                                          # "color:black; "
+                                          "background: rgb(233, 231, 244); "
+                                          "selection-color:white;"
+                                          "selection-background-color: rgba(149,125,239,1);"
+                                          "}\n"
+
+                                          "QComboBox QAbstractScrollArea QScrollBar:vertical {"  
+                                          "width:7px;\n"
+                                          "height: 100px;"
+                                          "background-color: transparent;  }\n"
+
+                                          "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                          "border-radius: 3px;   "
+                                          "background: rgba(0,0,0,0.1);}\n"
+
+                                          "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                          "background: rgb(149, 125, 239);}\n"
+
+                                          "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                          "border:none;}"
+                                          "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                          "border:none;}"
+                                          "")
+
+        self.add_shadow1(self.Region_comboBox)
+        self.Region_comboBox.setStyleSheet("QComboBox {"
+                                           "combobox-popup: 0;\n"  # Scroll bar setting
+                                           "background-color: rgb(233, 231, 244);"
+                                           "border: 1px solid rgb(200, 200, 200);"
+                                           "border-radius: 7px"
+                                           "}\n"
+
+                                           "QComboBox:drop-down {"  
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; "  
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                           "QComboBox:drop-down:checked{"  
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; "  
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                           "QComboBox QAbstractItemView {"  
+                                           # "color:black; "
+                                           "background: rgb(233, 231, 244); "
+                                           "selection-color:white;"
+                                           "selection-background-color: rgba(149,125,239,1);"
+                                           "}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                           "width:7px;\n"
+                                           "height: 100px;"
+                                           "background-color: transparent;  }\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                           "border-radius: 3px;   "
+                                           "background: rgba(0,0,0,0.1);}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                           "background: rgb(149, 125, 239);}\n"
+
+                                           "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                           "border:none;}"
+                                           "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                           "border:none;}"
+                                           "")
+        self.add_shadow1(self.District_comboBox)
+        self.District_comboBox.setStyleSheet("QComboBox {"
+                                             "combobox-popup: 0;\n"  # Scroll bar setting
+                                             "background-color: rgb(233, 231, 244);"
+                                             "border: 1px solid rgb(200, 200, 200);"
+                                             "border-radius: 7px"
+                                             "}\n"
+
+                                             "QComboBox:drop-down {" 
+                                             "width:30px;  "
+                                             "height:10px; "
+                                             "border: none;  "
+                                             "subcontrol-position: right center; "  
+                                             "subcontrol-origin: padding;"
+                                             "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                             "QComboBox:drop-down:checked{"  
+                                             "width:30px;  "
+                                             "height:10px; "
+                                             "border: none;  "
+                                             "subcontrol-position: right center; "  
+                                             "subcontrol-origin: padding;"
+                                             "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                             "QComboBox QAbstractItemView {"  
+                                             # "color:black; "
+                                             "background: rgb(233, 231, 244); "
+                                             "selection-color:white;"
+                                             "selection-background-color: rgba(149,125,239,1);"
+                                             "}\n"
+
+                                             "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                             "width:7px;\n"
+                                             "height: 100px;"
+                                             "background-color: transparent;  }\n"
+
+                                             "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                             "border-radius: 3px;   "
+                                             "background: rgba(0,0,0,0.1);}\n"
+
+                                             "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                             "background: rgb(149, 125, 239);}\n"
+
+                                             "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                             "border:none;}"
+                                             "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                             "border:none;}"
+                                             "")
+        self.add_shadow1(self.Station_comboxBox)
+        self.Station_comboxBox.setStyleSheet("QComboBox {"
+                                             "combobox-popup: 0;\n"  # Scroll bar setting
+                                             "background-color: rgb(233, 231, 244);"
+                                             "border: 1px solid rgb(200, 200, 200);"
+                                             "border-radius: 7px"
+                                             "}\n"
+
+                                             "QComboBox:drop-down {"  
+                                             "width:30px;  "
+                                             "height:10px; "
+                                             "border: none;  "
+                                             "subcontrol-position: right center; "  
+                                             "subcontrol-origin: padding;"
+                                             "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                             "QComboBox:drop-down:checked{"  
+                                             "width:30px;  "
+                                             "height:10px; "
+                                             "border: none;  "
+                                             "subcontrol-position: right center; "  
+                                             "subcontrol-origin: padding;"
+                                             "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                             "QComboBox QAbstractItemView {"  
+                                             # "color:black; "
+                                             "background: rgb(233, 231, 244); "
+                                             "selection-color:white;"
+                                             "selection-background-color: rgba(149,125,239,1);"
+                                             "}\n"
+
+                                             "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                             "width:7px;\n"
+                                             "height: 100px;"
+                                             "background-color: transparent;  }\n"
+
+                                             "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                             "border-radius: 3px;   "
+                                             "background: rgba(0,0,0,0.1);}\n"
+
+                                             "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                             "background: rgb(149, 125, 239);}\n"
+
+                                             "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                             "border:none;}"
+                                             "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                             "border:none;}"
+                                             "")
+        self.add_shadow1(self.Suburb_comboBox)
+        self.Suburb_comboBox.setStyleSheet("QComboBox {"
+                                           "width:200px;"
+                                           "combobox-popup: 0;\n"  # Scroll bar setting
+                                           "background-color: rgb(233, 231, 244);"
+                                           "border: 1px solid rgb(200, 200, 200);"
+                                           "border-radius: 7px"
+                                           "}\n"
+
+                                           "QComboBox:drop-down {"  
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; "  
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                           "QComboBox:drop-down:checked{"  
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; "  
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4.png\");}\n" 
+
+                                           "QComboBox QAbstractItemView {"  
+                                           # "color:black; "
+                                           "background: rgb(233, 231, 244); "
+                                           "selection-color:white;"
+                                           "selection-background-color: rgba(149,125,239,1);"
+                                           "}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                           "width:10px;\n"
+                                           "height: 400px;"
+                                           "background-color: transparent;  }\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                           "border-radius: 3px;   "
+                                           "background: rgba(0,0,0,0.1);}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                           "background: rgb(149, 125, 239);}\n"
+
+                                           "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                           "border:none;}"
+                                           "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                           "border:none;}"
+                                           "")
+
+        self.add_shadow1(self.Year_comboBox_1)
+        self.Year_comboBox_1.setStyleSheet("QComboBox {"
+                                           "combobox-popup: 0;\n"  # Scroll bar setting
+                                           "background-color: rgb(233, 231, 244);"
+                                           "border: 1px solid rgb(200, 200, 200);"
+                                           "border-radius: 7px"
+                                           "}\n"
+
+                                           "QComboBox:drop-down {" 
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; "  
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                           "QComboBox:drop-down:checked{"  
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; "  
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                           "QComboBox QAbstractItemView {"  
+                                           # "color:black; "
+                                           "background: rgb(233, 231, 244); "
+                                           "selection-color:white;"
+                                           "selection-background-color: rgba(149,125,239,1);"
+                                           "}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                           "width:7px;\n"
+                                           "height: 100px;"
+                                           "background-color: transparent;  }\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                           "border-radius: 3px;   "
+                                           "background: rgba(0,0,0,0.1);}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                           "background: rgb(149, 125, 239);}\n"
+
+                                           "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                           "border:none;}"
+                                           "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                           "border:none;}"
+                                           "")
+        self.add_shadow1(self.Year_comboBox_2)
+        self.Year_comboBox_2.setStyleSheet("QComboBox {"
+                                           "combobox-popup: 0;\n"  # Scroll bar setting
+                                           "background-color: rgb(233, 231, 244);"
+                                           "border: 1px solid rgb(200, 200, 200);"
+                                           "border-radius: 7px"
+                                           "}\n"
+
+                                           "QComboBox:drop-down {"  
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; " 
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                           "QComboBox:drop-down:checked{"  
+                                           "width:30px;  "
+                                           "height:10px; "
+                                           "border: none;  "
+                                           "subcontrol-position: right center; "  
+                                           "subcontrol-origin: padding;"
+                                           "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                           "QComboBox QAbstractItemView {"  
+                                           # "color:black; "
+                                           "background: rgb(233, 231, 244); "
+                                           "selection-color:white;"
+                                           "selection-background-color: rgba(149,125,239,1);"
+                                           "}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar:vertical {"  
+                                           "width:7px;\n"
+                                           "height: 100px;"
+                                           "background-color: transparent;  }\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  
+                                           "border-radius: 3px;   "
+                                           "background: rgba(0,0,0,0.1);}\n"
+
+                                           "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  
+                                           "background: rgb(149, 125, 239);}\n"
+
+                                           "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                           "border:none;}"
+                                           "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                           "border:none;}"
+                                           "")
+
+        self.add_shadow1(self.Monthly_comboBox_1)
+        self.Monthly_comboBox_1.setStyleSheet("QComboBox {"
+                                              "width:70px;"
+                                              "combobox-popup: 0;\n"  # Scroll bar setting
+                                              "background-color: rgb(233, 231, 244);"
+                                              "border: 1px solid rgb(200, 200, 200);"
+                                              "border-radius: 7px"
+                                              "}\n"
+
+                                              "QComboBox:drop-down {"  
+                                              "width:30px;  "
+                                              "height:10px; "
+                                              "border: none;  "
+                                              "subcontrol-position: right center; " 
+                                              "subcontrol-origin: padding;"
+                                              "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                              "QComboBox:drop-down:checked{"  
+                                              "width:30px;  "
+                                              "height:10px; "
+                                              "border: none;  "
+                                              "subcontrol-position: right center; "  
+                                              "subcontrol-origin: padding;"
+                                              "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                              "QComboBox QAbstractItemView {"  
+                                              # "color:black; "
+                                              "background: rgb(233, 231, 244); "
+                                              "selection-color:white;"
+                                              "selection-background-color: rgba(149,125,239,1);"
+                                              "}\n"
+
+                                              "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                              "width:7px;\n"
+                                              "height: 100px;"
+                                              "background-color: transparent;  }\n"
+
+                                              "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                              "border-radius: 3px;   "
+                                              "background: rgba(0,0,0,0.1);}\n"
+
+                                              "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                              "background: rgb(149, 125, 239);}\n"
+
+                                              "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                              "border:none;}"
+                                              "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                              "border:none;}"
+                                              "")
+        self.add_shadow1(self.Monthly_comboBox_2)
+        self.Monthly_comboBox_2.setStyleSheet("QComboBox {"
+                                              "width:70px;"
+                                              "combobox-popup: 0;\n"  # Scroll bar setting
+                                              "background-color: rgb(233, 231, 244);"
+                                              "border: 1px solid rgb(200, 200, 200);"
+                                              "border-radius: 7px"
+                                              "}\n"
+
+                                              "QComboBox:drop-down {"  
+                                              "width:30px;  "
+                                              "height:10px; "
+                                              "border: none;  "
+                                              "subcontrol-position: right center; "  
+                                              "subcontrol-origin: padding;"
+                                              "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                              "QComboBox:drop-down:checked{"  
+                                              "width:30px;  "
+                                              "height:10px; "
+                                              "border: none;  "
+                                              "subcontrol-position: right center; " 
+                                              "subcontrol-origin: padding;"
+                                              "image: url(\"pic/retangle 4.png\");}\n" 
+
+                                              "QComboBox QAbstractItemView {"  
+                                              # "color:black; "
+                                              "background: rgb(233, 231, 244); "
+                                              "selection-color:white;"
+                                              "selection-background-color: rgba(149,125,239,1);"
+                                              "}\n"
+
+                                              "QComboBox QAbstractScrollArea QScrollBar:vertical {"  
+                                              "width:7px;\n"
+                                              "height: 100px;"
+                                              "background-color: transparent;  }\n"
+
+                                              "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  
+                                              "border-radius: 3px;   "
+                                              "background: rgba(0,0,0,0.1);}\n"
+
+                                              "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  
+                                              "background: rgb(149, 125, 239);}\n"
+
+                                              "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                              "border:none;}"
+                                              "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                              "border:none;}"
+                                              "")
+
+        self.add_shadow1(self.Quarterly_comboBox_1)
+        self.Quarterly_comboBox_1.setStyleSheet("QComboBox {"
+                                                "width:70px;"
+                                                "combobox-popup: 0;\n"  # Scroll bar setting
+                                                "background-color: rgb(233, 231, 244);"
+                                                "border: 1px solid rgb(200, 200, 200);"
+                                                "border-radius: 7px"
+                                                "}\n"
+
+                                                "QComboBox:drop-down {"  
+                                                "width:30px;  "
+                                                "height:10px; "
+                                                "border: none;  "
+                                                "subcontrol-position: right center; "  
+                                                "subcontrol-origin: padding;"
+                                                "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                                "QComboBox:drop-down:checked{"  
+                                                "width:30px;  "
+                                                "height:10px; "
+                                                "border: none;  "
+                                                "subcontrol-position: right center; "  
+                                                "subcontrol-origin: padding;"
+                                                "image: url(\"pic/retangle 4.png\");}\n" 
+
+                                                "QComboBox QAbstractItemView {"  
+                                                # "color:black; "
+                                                "background: rgb(233, 231, 244); "
+                                                "selection-color:white;"
+                                                "selection-background-color: rgba(149,125,239,1);"
+                                                "}\n"
+
+                                                "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                                "width:7px;\n"
+                                                "height: 100px;"
+                                                "background-color: transparent;  }\n"
+
+                                                "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                                "border-radius: 3px;   "
+                                                "background: rgba(0,0,0,0.1);}\n"
+
+                                                "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                                "background: rgb(149, 125, 239);}\n"
+
+                                                "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                                "border:none;}"
+                                                "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                                "border:none;}"
+                                                "")
+        self.add_shadow1(self.Quarterly_comboBox_2)
+        self.Quarterly_comboBox_2.setStyleSheet("QComboBox {"
+                                                "width:70px;"
+                                                "combobox-popup: 0;\n"  # Scroll bar setting
+                                                "background-color: rgb(233, 231, 244);"
+                                                "border: 1px solid rgb(200, 200, 200);"
+                                                "border-radius: 7px"
+                                                "}\n"
+
+                                                "QComboBox:drop-down {"  
+                                                "width:30px;  "
+                                                "height:10px; "
+                                                "border: none;  "
+                                                "subcontrol-position: right center; "  
+                                                "subcontrol-origin: padding;"
+                                                "image: url(\"pic/retangle 4(1).png\");}\n"  
+
+                                                "QComboBox:drop-down:checked{"  
+                                                "width:30px;  "
+                                                "height:10px; "
+                                                "border: none;  "
+                                                "subcontrol-position: right center; "  
+                                                "subcontrol-origin: padding;"
+                                                "image: url(\"pic/retangle 4.png\");}\n"  
+
+                                                "QComboBox QAbstractItemView {"  
+                                                # "color:black; "
+                                                "background: rgb(233, 231, 244); "
+                                                "selection-color:white;"
+                                                "selection-background-color: rgba(149,125,239,1);"
+                                                "}\n"
+
+                                                "QComboBox QAbstractScrollArea QScrollBar:vertical {"  # Scroll bar
+                                                "width:7px;\n"
+                                                "height: 100px;"
+                                                "background-color: transparent;  }\n"
+
+                                                "QComboBox QAbstractScrollArea QScrollBar::handle:vertical {\n"  # Scroll bar
+                                                "border-radius: 3px;   "
+                                                "background: rgba(0,0,0,0.1);}\n"
+
+                                                "QComboBox QAbstractScrollArea QScrollBar::handle:vertical:hover {\n"  # scoll 
+                                                "background: rgb(149, 125, 239);}\n"
+
+                                                "QComboBox QScrollBar::add-line::vertical{"  # top arrow
+                                                "border:none;}"
+                                                "QComboBox QScrollBar::sub-line::vertical{"  # down arrow
+                                                "border:none;}"
+                                                "")
+        
+        # set mouse tracking
+        self._move_drag = False
+        self._bottom_drag = False
+        self._right_drag = False
+        self._left_drag = False
+        self._right_bottom_corner_drag = False
+        self._left_bottom_corner_drag = False
+        self.minWidth = 903
+    def resizeEvent(self, QResizeEvent):
+
+        # Resize border area 
+        self._left_rect = [QPoint(x, y) for x in range(0, 5)
+                           for y in range(5, self.height() - 5)]
+        self._right_rect = [QPoint(x, y) for x in range(self.width() - 5, self.width() + 1)
+                           for y in range(5, self.height() - 5)]
+        self._bottom_rect = [QPoint(x, y) for x in range(5, self.width() - 5)
+                         for y in range(self.height() - 5, self.height() + 1)]
+        self._right_bottom_corner_rect = [QPoint(x, y) for x in range(self.width() - 5, self.width() + 1)
+                                    for y in range(self.height() - 5, self.height() + 1)]
+        self._left_bottom_corner_rect = [QPoint(x, y) for x in range(0, 5)
+                             for y in range(self.height() - 5, self.height() + 1)]
+
+    def mousePressEvent(self, event):
+        # if self.isMaximized():
+        #     self.showNormal()
+       
+        if (event.button() == Qt.LeftButton) and (event.pos() in self._right_bottom_corner_rect):
+            self._right_bottom_corner_drag = True
+            event.accept()
+        elif (event.button() == Qt.LeftButton) and (event.pos() in self._left_bottom_corner_rect):
+            self._left_bottom_corner_drag = True
+            event.accept()
+        elif (event.button() == Qt.LeftButton) and (event.pos() in self._left_rect):
+            self._left_drag = True
+            event.accept()
+        elif (event.button() == Qt.LeftButton) and (event.pos() in self._right_rect):
+            self._right_drag = True
+            event.accept()
+        elif (event.button() == Qt.LeftButton) and (event.pos() in self._bottom_rect):
+            self._bottom_drag = True
+            event.accept()
+        elif (event.button() == Qt.LeftButton):
+            self._move_drag = True
+            self.move_DragPosition = event.globalPos() - self.pos()
+            event.accept()
+
+    def mouseMoveEvent(self, QMouseEvent):
+        if QMouseEvent.pos() in self._right_bottom_corner_rect:
+            self.setCursor(Qt.SizeFDiagCursor)
+        elif QMouseEvent.pos() in self._left_bottom_corner_rect:
+            self.setCursor(Qt.SizeBDiagCursor)
+        elif QMouseEvent.pos() in self._bottom_rect:
+            self.setCursor(Qt.SizeVerCursor)
+        elif QMouseEvent.pos() in self._right_rect:
+            self.setCursor(Qt.SizeHorCursor)
+        elif QMouseEvent.pos() in self._left_rect:
+            self.setCursor(Qt.SizeHorCursor)
+        else:
+            self.setCursor(Qt.ArrowCursor)
+        if Qt.LeftButton and self._right_drag:
+            self.resize(QMouseEvent.pos().x(), self.height())
+            QMouseEvent.accept()
+        elif Qt.LeftButton and self._left_drag:
+            if self.width() - QMouseEvent.pos().x() > self.minWidth:
+                self.resize(self.width() - QMouseEvent.pos().x(), self.height())
+                self.move(self.x() + QMouseEvent.pos().x(), self.y())
+            QMouseEvent.accept()
+        elif Qt.LeftButton and self._bottom_drag:
+            self.resize(self.width(), QMouseEvent.pos().y())
+            QMouseEvent.accept()
+        elif Qt.LeftButton and self._right_bottom_corner_drag:
+            self.resize(QMouseEvent.pos().x(), QMouseEvent.pos().y())
+            QMouseEvent.accept()
+        elif Qt.LeftButton and self._left_bottom_corner_drag:
+            if self.width() - QMouseEvent.pos().x() > self.minWidth:
+                self.resize(self.width() - QMouseEvent.pos().x(), QMouseEvent.pos().y())
+                self.move(self.x() + QMouseEvent.pos().x(), self.y())
+            QMouseEvent.accept()
+        elif Qt.LeftButton and self._move_drag:
+            self.move(QMouseEvent.globalPos() - self.move_DragPosition)
+            QMouseEvent.accept()
+
+    def mouseReleaseEvent(self, QMouseEvent):
+        self._move_drag = False
+        self._right_bottom_corner_drag = False
+        self._bottom_drag = False
+        self._right_drag = False
+        self._left_drag = False
+        self._left_bottom_corner_drag = False
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
