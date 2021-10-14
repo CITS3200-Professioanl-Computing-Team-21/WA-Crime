@@ -4,8 +4,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
 from PyQt5 import QtWidgets, QtCore
-from UI3_5 import Ui_MainWindow
-
+from ui import Ui_MainWindow
 #import boundaries
 
 # IDENTIFIERS
@@ -29,16 +28,12 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         super(MainWindow,self).__init__()
         self.setupUi(self)
         self.browser = QWebEngineView()
-        self.browser.load(QtCore.QUrl.fromLocalFile("/stations.html"))
+        self.browser.load(QtCore.QUrl.fromLocalFile("/default_map.html"))
         hboxlayout = QHBoxLayout(self.frame)
         hboxlayout.addWidget(self.browser)
-        # self.browser = QWebEngineView()
-        # self.browser.load(QUrl('https://www.google.com'))
-        # hboxlayout = QHBoxLayout(self.frame)
-        # hboxlayout.addWidget(self.browser)
 
         # export button 
-        # self.Search_pushButton.clicked.connect(self.query)
+        # self.Search_pushButton.clicked.connect(self.query)    #moved to ui.py
         self.Screenshot_pushButton.clicked.connect(self.screenshot)
 
         # search box prompt
@@ -106,14 +101,8 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self.Quarterly_comboBox_1.currentIndexChanged.connect(lambda : self.generate_map(QUARTER))
         self.Quarterly_comboBox_2.currentIndexChanged.connect(lambda : self.generate_map(QUARTER2))
 
-        #Style initialize
-
+        # style initialize
         self.initDrag()
-
-
-
-
-
 
     # Reads csv file from config, outputs a list of names 
     # filename is the name of file
@@ -132,7 +121,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         url = QtCore.QUrl.fromLocalFile("/regions.html")
         self.browser.load(url)
     
-    # placeholder, function generates a html based on input query
+    # called by backend, function generates a html based on input query
     def process_query(self,name, zone_type, year, period, crime):
         print("Name, Zone_type, Year, Period, Crime")
         print(name, zone_type, year, period, crime)
@@ -430,8 +419,9 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         screen = QApplication.primaryScreen()
         screenshot = screen.grabWindow(self.frame.winId())
         screenshot.save(fileName_choose, 'jpg')
+        
+    ##################################### Layout Events ###############################################
     def initDrag(self):
-        ############################## UI Improvement ##########################################
         self.setWindowFlags(Qt.FramelessWindowHint)
         # set mouse tracking
         self._move_drag = False
@@ -522,6 +512,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         self._right_drag = False
         self._left_drag = False
         self._left_bottom_corner_drag = False
+    ##################################### End of Layout Events ###############################################
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
