@@ -3,6 +3,7 @@
 
 # Folders
 config -> csv for selector dropdown options\
+images -> images used in style sheet\
 tools -> supporting applications\
 depre -> past versions of application
 
@@ -15,6 +16,12 @@ Selectors based on selector2.doc, adjustable via ./config csv
 - Crime selector
 
 # Versions
+v 4.0 (Final version)
+- UI stylesheet added
+- Functionailities for textual and graphical display of anomolies
+- Threaded backend map generation for client responsiveness
+Note: ui.py is now a modified version from the base generated UI3.5.ui\
+
 v 3.1 (integration patch)
 - Changed config/ .csv to be consistent with back end
 - Query is now comma deliminated
