@@ -125,6 +125,7 @@ color:white</string>
             <string notr="true">QPushButton:pressed{
 background-color:rgb(223, 223, 223)
 }
+
 QPushButton:hover{
 background-color:rgb(223, 223, 223)
 }</string>
