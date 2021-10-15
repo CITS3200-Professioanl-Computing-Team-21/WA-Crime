@@ -32,6 +32,7 @@ def filter(name, zone, year, mq, offence):
                                         jul int,
                                         aug int,
                                         sep int,
+                                        oct int,
                                         nov int,
                                         dec int,
                                         jan int,
