@@ -157,10 +157,11 @@ def choropleth(query):
         data = gpd.read_file(LANDGATE)
         starting_zoom = 12
     if query[1] == 'district':
-        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/stations.geojson')
+        #C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson
+        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson')
         starting_zoom = 9
     if query[1] == 'region':
-        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/districts.geojson')
+        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\districts.geojson')
         starting_zoom = 6
     data['name'] = data['name'].str.upper()
     # for_plotting = results.merge(data, left_on = 'name', right_on = 'name')

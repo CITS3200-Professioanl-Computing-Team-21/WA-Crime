@@ -28,7 +28,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         super(MainWindow,self).__init__()
         self.setupUi(self)
         self.browser = QWebEngineView()
-        self.browser.load(QtCore.QUrl.fromLocalFile("/default_map.html"))
+        self.browser.load(QtCore.QUrl.fromLocalFile("/default.html"))
         hboxlayout = QHBoxLayout(self.frame)
         hboxlayout.addWidget(self.browser)
 

@@ -229,12 +229,17 @@ def filter(name, zone, year, mq, offence):
         j += 1
     filtered = convert(filtered, ["name", "sum"])
 
+    # Create object to return anomaly and graph data
+    # data = statobject()
+
+
     graphs = []
     anomalies = []
     anomalies = convert(anomalies, ["name", "stat"])
     # graphs, anomalies = statistics(unfiltered)
     # return filtered, graphs, anomalies
-    return filtered, anomalies
+    # return filtered, anomalies
+    return filtered
 
     
 
@@ -356,6 +361,19 @@ def convert(list, cols):
     df = pandas.DataFrame(list, columns = cols)
     print(df)
     return df
+
+# anomalydata = [["Perth", 30], ["Northbridge", 23]]
+# data = statobject(anomalydata, unfiltered)
+
+# class statobject:
+#     def __init__(self, anomalydata, unfiltered):
+#         # Text to be displayed in panel 1 summarised anomalies.
+#         anomalies_text = textanomalies(anomalydata)
+#         plt = makegraph(unfiltered)
+#         def getText():
+#             return self.anomalies_text
+#         def getGraph():
+#             plt.show(
 
 
 # Name, zone, year, month/quarter, crime
