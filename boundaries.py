@@ -149,8 +149,7 @@ def choropleth(query):
     #print(results)
     #print(stat)
     #plt.show(ax)
-    results, anomalies = filter.filter(query[0], query[1], query[2], query[3], query[4])
-    print(anomalies)
+    results, anomalies, plot = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
