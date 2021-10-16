@@ -124,11 +124,11 @@ def filter(name, zone, year, mq, offence):
 
     # print(y1, y2, sub_zone, zone, mrange, offence, name)
 
-    allmonth = "jul + aug + sep + oct + nov + dec + jan + feb + mar + apr + may + jun"
+    allmonth = "SUM(jul) + SUM(aug) + SUM(sep) + SUM(oct) + SUM(nov) + SUM(dec) + SUM(jan) + SUM(feb) + SUM(mar) + SUM(apr) + SUM(may) + SUM(jun)"
 
     # We only show every month if we have a narrow year search less than 4 years, otherwise show overall year trends
     # query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, SUM(jul) as jul, SUM(aug) as aug, SUM(sep) as sep, SUM(oct) as oct, SUM(nov) as nov, SUM(dec) as dec, SUM(jan) as jan, SUM(feb) as feb, SUM(mar) as mar, SUM(apr) as apr, SUM(may) as may, SUM(jun) as jun, " + allmonth + " FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
-    query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, SUM(jul) as jul, SUM(aug) as aug, SUM(sep) as sep, SUM(oct) as oct, SUM(nov) as nov, SUM(dec) as dec, SUM(jan) as jan, SUM(feb) as feb, SUM(mar) as mar, SUM(apr) as apr, SUM(may) as may, SUM(jun) as jun FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
+    query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, SUM(jul) as jul, SUM(aug) as aug, SUM(sep) as sep, SUM(oct) as oct, SUM(nov) as nov, SUM(dec) as dec, SUM(jan) as jan, SUM(feb) as feb, SUM(mar) as mar, SUM(apr) as apr, SUM(may) as may, SUM(jun) as jun, " + allmonth + " as total FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
 
     # CURRENT PROBLEM. LEAKS AROUND YEAR_FN REQUIRING YOU INCLUDE PREVIOUS OR FOLLOWING YEARS
     if name != 'all' or offence != 'all' or year != 'all':
@@ -215,9 +215,9 @@ def filter(name, zone, year, mq, offence):
     # print(c.fetchall())
 
     # print(query)
-    unfiltered = convert(unfiltered, ["name", "year_fn", "jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun"])
+    unfiltered = convert(unfiltered, ["name", "year_fn", "jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun", "total"])
     # unfiltered = convert(unfiltered, ["name", "year_fn", "total"])
-    print(unfiltered)
+    # print(unfiltered)
     # return unfiltered
 
     # Following is to apply final filters to data
@@ -260,12 +260,12 @@ def filter(name, zone, year, mq, offence):
     # print(plt.gcf().number)
     # plt.show()
     # data.plt.savefig('test2.png')
-    print(data.anomalies_text)
+    # print(data.anomalies_text)
     # data.plt.show()
     anomalies = convert(anomalies, ["name", "year", "mean", "std_e", "observation", "p-value"])
     # print(anomalies)
 
-    print(anomalies)
+    # print(anomalies)
     # Returns the filtered data to make heatmap, anomaly information, and data object holding textual anomaly information and graph
     return filtered, anomalies, data
 
@@ -285,10 +285,12 @@ def statistics(filtered, unfiltered, mrange):
             values = unfiltered.loc[unfiltered['name'] == name_list[i]]
             data_years = values[values.columns[1]].values.tolist()
             extracted_values = values[values.columns[-1:]].values.tolist()
+            # if len(extracted_values) == 60:
+            #     e = 4
             plot_values = []
             for i in extracted_values:
                 plot_values += i
-            print(mrange)
+            # print(mrange)
             plt.plot(data_years, plot_values, marker='o')
         plt.legend(name_list)
         plt.xticks(rotation=45)
@@ -301,17 +303,18 @@ def statistics(filtered, unfiltered, mrange):
             for i in range(len(name_list)):
                 values = dataframe.loc[dataframe['name'] == name_list[i]]
                 extracted_values = values[values.columns[2:]].values.tolist()
+                data_years = values[values.columns[1]].values.tolist()
                 plot_values = []
                 for i in extracted_values:
                     plot_values += i
                 months = []
-                for i in range(len(year_list)):
+                for i in range(len(data_years)):
                     months += values[values.columns[2:]].columns.tolist()
                 #print(extracted_values)
                 #print(plot_values)
                 #print(months)
                 count = 0
-                for i in year_list:
+                for i in data_years:
                     for j in range(len(values[values.columns[2:]].columns.tolist())):
                         months[count] += str(i)[2:]
                         count += 1
@@ -549,6 +552,8 @@ class statobject:
         return self.anomalies_text
 
 def text(anomalydata, offence):
+    if offence == "all":
+        offence = "crime"
     text = ""
     for i in range(len(anomalydata)):
         period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
@@ -568,5 +573,6 @@ def text(anomalydata, offence):
 # filter('perth', 'station', '2014-15', 'jul', 'stealing') #1 year, 1 month
 # filter('perth', 'station', '2014-15-2019-20', 'jul', 'stealing') # <5ysears, 1 month, fix
 # filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
+filter('nedlands', 'suburb', '2016-17-2019-20', 'mar-aug', 'drug offences')
 
 #perth district = 92571, wembley station = 34120
