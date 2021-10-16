@@ -159,12 +159,13 @@ def choropleth(query):
         fields = ['name', 'postcode', 'land_area','sum']
         aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
     if query[1] == 'district':
-        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/stations.geojson')
+        #C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson
+        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson')
         starting_zoom = 9
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if query[1] == 'region':
-        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/districts.geojson')
+        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\districts.geojson')
         starting_zoom = 6
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
@@ -246,6 +247,7 @@ def choropleth(query):
     coordinates = dict(coordinates)
 
     choropleth.save('trial.html')
+    return data
     
 def main():
     for file in FILES:
