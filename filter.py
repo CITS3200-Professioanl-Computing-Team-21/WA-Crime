@@ -246,7 +246,7 @@ def filter(name, zone, year, mq, offence):
     # graphs, anomalies = statistics(unfiltered)
     # return filtered, graphs, anomalies
     #graphs, anomalies = statistics(filtered, unfiltered)
-    fig, anomalies = statistics(filtered, unfiltered, mrange)
+    anomalies = statistics(filtered, unfiltered, mrange)
     # print(filtered)
     
     # print('it works')
@@ -256,22 +256,20 @@ def filter(name, zone, year, mq, offence):
     # if anomalies == []:
     #     anomalies = 'CHOOSE BETTER QUERY' #CHANGE THIS PLEASE
 
-    data = statobject(anomalies, fig, offence)
+    data = statobject(anomalies, offence, unfiltered, mrange)
     # print(plt.gcf().number)
     # plt.show()
     # data.plt.savefig('test2.png')
     # print(data.anomalies_text)
     # data.plt.show()
     anomalies = convert(anomalies, ["name", "year", "mean", "std_e", "observation", "p-value"])
-    # print(anomalies)
+    print(anomalies)
 
     # print(anomalies)
     # Returns the filtered data to make heatmap, anomaly information, and data object holding textual anomaly information and graph
     return filtered, anomalies, data
 
-def statistics(filtered, unfiltered, mrange):
-    #think of more meaningful labelling methods if possible
-    #add x and y labels
+def graph(unfiltered, mrange):
     name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
     year_list = unfiltered['year_fn'].drop_duplicates().sort_values().tolist()
     temp1 = unfiltered[unfiltered.columns[[0,1]]]
@@ -284,6 +282,8 @@ def statistics(filtered, unfiltered, mrange):
         for i in range(len(name_list)):
             values = unfiltered.loc[unfiltered['name'] == name_list[i]]
             data_years = values[values.columns[1]].values.tolist()
+            if len(data_years) != len(year_list): 
+                continue
             extracted_values = values[values.columns[-1:]].values.tolist()
             # if len(extracted_values) == 60:
             #     e = 4
@@ -304,6 +304,8 @@ def statistics(filtered, unfiltered, mrange):
                 values = dataframe.loc[dataframe['name'] == name_list[i]]
                 extracted_values = values[values.columns[2:]].values.tolist()
                 data_years = values[values.columns[1]].values.tolist()
+                if len(data_years) != len(year_list): 
+                    continue
                 plot_values = []
                 for i in extracted_values:
                     plot_values += i
@@ -323,7 +325,7 @@ def statistics(filtered, unfiltered, mrange):
             plt.xticks(rotation=45)
             plt.xlabel('Years/Months Distribution')
             plt.ylabel('Crime Counts')
-        if '+' not in mrange:
+        elif '+' not in mrange:
             temp = dataframe.groupby('name')[mrange].sum()
             plt.bar(name_list, list(temp))
             plt.xticks(rotation=45)
@@ -331,7 +333,20 @@ def statistics(filtered, unfiltered, mrange):
             plt.ylabel('Crime Counts')
             plt.title(mrange + str(year_list)[3:-1])
 
-    #plt.show()
+    plt.show()
+
+
+def statistics(filtered, unfiltered, mrange):
+    #think of more meaningful labelling methods if possible
+    #add x and y labels
+    name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
+    year_list = unfiltered['year_fn'].drop_duplicates().sort_values().tolist()
+    temp1 = unfiltered[unfiltered.columns[[0,1]]]
+    if '+' not in mrange:
+        temp2 = unfiltered[mrange]
+    elif '+' in mrange:
+        temp2 = unfiltered[mrange[1:-1].split('+')]
+    dataframe = pandas.concat([temp1, temp2], axis=1)
 
     temp = []
     anomalies = []
@@ -371,7 +386,7 @@ def statistics(filtered, unfiltered, mrange):
             for k in extracted_values:
                 k = [i for i in k if i != '']
                 t_value = (sum(k)-mean)/(std_e)
-                p_value = stats.t.sf(t_value, df = (len(total) - 1))
+                p_value = stats.t.sf(abs(t_value), df = (len(total) - 1))*2
                 temp.append([name_list[a], year_list[count], mean, std_e, sum(k), p_value])
                 count += 1
 
@@ -397,7 +412,7 @@ def statistics(filtered, unfiltered, mrange):
             for i in plot_values:
                 t_value.append((i-mean)/(std_e))
             for i in t_value:
-                p_value.append(stats.t.sf(i, df = (num -1)))
+                p_value.append(stats.t.sf(abs(i), df = (num -1))*2)
             count = 0
             for i, k in enumerate(p_value):
                 if k < 0.05:
@@ -415,7 +430,7 @@ def statistics(filtered, unfiltered, mrange):
 
     # Change to hold array of all figs
     
-    return plt.figure(1), anomalies
+    return anomalies
 
 def distribution(mq):
     # Collects the months whose data are to be summed, scans from m0 to m1 collecting
@@ -540,14 +555,16 @@ def convert(list, cols):
 # data = statobject(anomalydata, unfiltered)
 
 class statobject:
-    def __init__(self, anomalydata, fig, offence):
+    def __init__(self, anomalydata, offence, unfiltered, mrange):
         # Text to be displayed in panel 1 summarised anomalies.
         self.anomalies_text = ""
+        self.unfiltered = unfiltered
+        self.mrange = mrange
         # print(anomalydata)
         if anomalydata != []:
             self.anomalies_text = text(anomalydata, offence)
     def getGraph(self):
-        plt.show()
+        graph(self.unfiltered, self.mrange)
     def getText(self):
         return self.anomalies_text
 
@@ -567,12 +584,13 @@ def text(anomalydata, offence):
 # Name, zone, year, month/quarter, crime
 # filter('mandurah', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', 'all', 'all', 'all') 
+filter('albany', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
 # filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
 # filter('perth', 'station', '2014-15', 'jul-oct', 'stealing') # 1 year
 # filter('perth', 'station', '2014-15', 'jul', 'stealing') #1 year, 1 month
 # filter('perth', 'station', '2014-15-2019-20', 'jul', 'stealing') # <5ysears, 1 month, fix
 # filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
-filter('nedlands', 'suburb', '2016-17-2019-20', 'mar-aug', 'drug offences')
+# filter('nedlands', 'suburb', '2016-17-2019-20', 'mar-aug', 'drug offences')
 
 #perth district = 92571, wembley station = 34120
