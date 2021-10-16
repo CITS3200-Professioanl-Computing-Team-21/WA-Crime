@@ -127,7 +127,9 @@ def filter(name, zone, year, mq, offence):
     allmonth = "jul + aug + sep + oct + nov + dec + jan + feb + mar + apr + may + jun"
 
     # We only show every month if we have a narrow year search less than 4 years, otherwise show overall year trends
-    query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, jul, aug, sep, oct, nov, dec, jan, feb, mar, apr, may, jun, " + allmonth + " FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
+    # query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, SUM(jul) as jul, SUM(aug) as aug, SUM(sep) as sep, SUM(oct) as oct, SUM(nov) as nov, SUM(dec) as dec, SUM(jan) as jan, SUM(feb) as feb, SUM(mar) as mar, SUM(apr) as apr, SUM(may) as may, SUM(jun) as jun, " + allmonth + " FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
+    query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, SUM(jul) as jul, SUM(aug) as aug, SUM(sep) as sep, SUM(oct) as oct, SUM(nov) as nov, SUM(dec) as dec, SUM(jan) as jan, SUM(feb) as feb, SUM(mar) as mar, SUM(apr) as apr, SUM(may) as may, SUM(jun) as jun FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
+
     # CURRENT PROBLEM. LEAKS AROUND YEAR_FN REQUIRING YOU INCLUDE PREVIOUS OR FOLLOWING YEARS
     if name != 'all' or offence != 'all' or year != 'all':
         query0 += " WHERE"
@@ -145,6 +147,7 @@ def filter(name, zone, year, mq, offence):
             if includeand:
                 query0 += " AND"
             query0 += " year_fn >= " + y1 + " AND year_fn < " + y2
+    query0 += " GROUP BY Localities." + sub_zone + ", year_fn"
     # if int(y2) - int(y1) > 4:
     #     query0 += " GROUP BY year_fn, Localities." + sub_zone + " ORDER BY Localities." + sub_zone
     # if sub_zone == 'Suburb':
@@ -212,9 +215,9 @@ def filter(name, zone, year, mq, offence):
     # print(c.fetchall())
 
     # print(query)
-    unfiltered = convert(unfiltered, ["name", "year_fn", "jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun", "total"])
+    unfiltered = convert(unfiltered, ["name", "year_fn", "jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun"])
     # unfiltered = convert(unfiltered, ["name", "year_fn", "total"])
-    # print(unfiltered)
+    print(unfiltered)
     # return unfiltered
 
     # Following is to apply final filters to data
@@ -254,13 +257,15 @@ def filter(name, zone, year, mq, offence):
     #     anomalies = 'CHOOSE BETTER QUERY' #CHANGE THIS PLEASE
 
     data = statobject(anomalies, fig, offence)
-    data.plt.savefig('test2.png')
+    # print(plt.gcf().number)
+    # plt.show()
+    # data.plt.savefig('test2.png')
     print(data.anomalies_text)
-    data.plt.show()
+    # data.plt.show()
     anomalies = convert(anomalies, ["name", "year", "mean", "std_e", "observation", "p-value"])
-    print(anomalies)
-
     # print(anomalies)
+
+    print(anomalies)
     # Returns the filtered data to make heatmap, anomaly information, and data object holding textual anomaly information and graph
     return filtered, anomalies, data
 
@@ -282,9 +287,12 @@ def statistics(filtered, unfiltered, mrange):
             plot_values = []
             for i in extracted_values:
                 plot_values += i
-            plt.plot(year_list, plot_values)
+            print(mrange)
+            plt.plot(year_list, plot_values, marker='o')
         plt.legend(name_list)
         plt.xticks(rotation=45)
+        plt.xlabel('Years/Months Distribution')
+        plt.ylabel('Crime Counts')
     elif len(year_list) <= 5:
         #if possible, highlight queried distributions????
         #plot based on months (up to 60 months)
@@ -304,9 +312,11 @@ def statistics(filtered, unfiltered, mrange):
                 for j in range(len(values[values.columns[2:]].columns.tolist())):
                     months[count] += str(i)[2:]
                     count += 1
-            plt.plot(months, plot_values)
+            plt.plot(months, plot_values, marker = 'o')
         plt.legend(name_list)
         plt.xticks(rotation=45)
+        plt.xlabel('Years/Months Distribution')
+        plt.ylabel('Crime Counts')
 
     #plt.show()
 
@@ -338,6 +348,7 @@ def statistics(filtered, unfiltered, mrange):
 
             total = []
             for k in extracted_values:
+                k = [i for i in k if i != '']
                 total.append(sum(k))
             mean = np.mean(total)
             std_e = stats.sem(total)
@@ -345,6 +356,7 @@ def statistics(filtered, unfiltered, mrange):
             # Where k is an array that represents the sample
             count = 0
             for k in extracted_values:
+                k = [i for i in k if i != '']
                 t_value = (sum(k)-mean)/(std_e)
                 p_value = stats.t.sf(t_value, df = (len(total) - 1))
                 temp.append([name_list[a], year_list[count], mean, std_e, sum(k), p_value])
@@ -388,6 +400,8 @@ def statistics(filtered, unfiltered, mrange):
     #If p > alpha: Accept null hypothesis that the means are equal.
     #If p <= alpha: Reject null hypothesis that the means are equal.
 
+    # Change to hold array of all figs
+    
     return plt.figure(1), anomalies
 
 def distribution(mq):
@@ -519,7 +533,10 @@ class statobject:
         # print(anomalydata)
         if anomalydata != []:
             self.anomalies_text = text(anomalydata, offence)
-        self.plt = fig
+    def getGraph(self):
+        plt.show()
+    def getText(self):
+        return self.anomalies_text
 
 def text(anomalydata, offence):
     text = ""
@@ -533,7 +550,9 @@ def text(anomalydata, offence):
 
 
 # Name, zone, year, month/quarter, crime
-filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
+filter('mandurah', 'station', 'all', 'all', 'all') 
+# filter('perth', 'station', 'all', 'all', 'all') 
+# filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
 # filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
 # filter('perth', 'station', '2014-15', 'jul-oct', 'stealing') # 1 year
 # filter('perth', 'station', '2014-15', 'jul', 'stealing') #1 year, 1 month
