@@ -149,8 +149,7 @@ def choropleth(query):
     #print(results)
     #print(stat)
     #plt.show(ax)
-    results, anomalies = filter.filter(query[0], query[1], query[2], query[3], query[4])
-    print(anomalies)
+    results, anomalies, plot = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
@@ -161,12 +160,12 @@ def choropleth(query):
         aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
     if query[1] == 'district':
         #C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson')
+        data = gpd.read_file(r'C:\Users\seanl\myprojects\cits3200-project\WA-Crime\zones\stations.geojson')
         starting_zoom = 9
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if query[1] == 'region':
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\districts.geojson')
+        data = gpd.read_file(r'C:\Users\seanl\myprojects\cits3200-project\WA-Crime\zones\districts.geojson')
         starting_zoom = 6
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
@@ -243,12 +242,12 @@ def choropleth(query):
         popup=folium.Popup(query[0].upper()),
     ).add_to(choropleth)
 
-    with open('/Users/adityagupta/Documents/GitHub/WA-Crime/coordinates.json') as f:
+    with open(r'C:\Users\seanl\myprojects\cits3200-project\WA-Crime\coordinates.json') as f:
         coordinates = json.load(f)
     coordinates = dict(coordinates)
 
-    choropleth.save('trial.html')
-    return data
+    choropleth.save('generated_map.html')
+    return plot
     
 def main():
     for file in FILES:

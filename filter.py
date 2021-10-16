@@ -297,27 +297,36 @@ def statistics(filtered, unfiltered, mrange):
     elif len(year_list) <= 5:
         #if possible, highlight queried distributions????
         #plot based on months (up to 60 months)
-        for i in range(len(name_list)):
-            values = dataframe.loc[dataframe['name'] == name_list[i]]
-            extracted_values = values[values.columns[2:]].values.tolist()
-            plot_values = []
-            for i in extracted_values:
-                plot_values += i
-            months = []
-            for i in range(len(year_list)):
-                months += values[values.columns[2:]].columns.tolist()
-            # print(extracted_values)
-            # print(months)
-            count = 0
-            for i in year_list:
-                for j in range(len(values[values.columns[2:]].columns.tolist())):
-                    months[count] += str(i)[2:]
-                    count += 1
-            plt.plot(months, plot_values, marker = 'o')
-        plt.legend(name_list)
-        plt.xticks(rotation=45)
-        plt.xlabel('Years/Months Distribution')
-        plt.ylabel('Crime Counts')
+        if '+' in mrange:
+            for i in range(len(name_list)):
+                values = dataframe.loc[dataframe['name'] == name_list[i]]
+                extracted_values = values[values.columns[2:]].values.tolist()
+                plot_values = []
+                for i in extracted_values:
+                    plot_values += i
+                months = []
+                for i in range(len(year_list)):
+                    months += values[values.columns[2:]].columns.tolist()
+                #print(extracted_values)
+                #print(plot_values)
+                #print(months)
+                count = 0
+                for i in year_list:
+                    for j in range(len(values[values.columns[2:]].columns.tolist())):
+                        months[count] += str(i)[2:]
+                        count += 1
+                plt.plot(months, plot_values, marker='o')
+            plt.legend(name_list)
+            plt.xticks(rotation=45)
+            plt.xlabel('Years/Months Distribution')
+            plt.ylabel('Crime Counts')
+        if '+' not in mrange:
+            temp = dataframe.groupby('name')[mrange].sum()
+            plt.bar(name_list, list(temp))
+            plt.xticks(rotation=45)
+            plt.xlabel('Locations')
+            plt.ylabel('Crime Counts')
+            plt.title(mrange + str(year_list)[3:-1])
 
     #plt.show()
 
@@ -551,7 +560,7 @@ def text(anomalydata, offence):
 
 
 # Name, zone, year, month/quarter, crime
-filter('mandurah', 'station', 'all', 'all', 'all') 
+# filter('mandurah', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
 # filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
@@ -561,8 +570,3 @@ filter('mandurah', 'station', 'all', 'all', 'all')
 # filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
 
 #perth district = 92571, wembley station = 34120
-
-
-
-
-
