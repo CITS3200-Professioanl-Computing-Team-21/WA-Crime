@@ -1,4 +1,8 @@
 import csv, sqlite3, os, pandas
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy as sp
+from scipy import stats
 
 # Desktop (windows) works for relative addresses for some reason, Mac doesn't
 # Desktop location: C:/Users/User/OneDrive/Uni/CITS3200/WA-Crime/data.db
@@ -76,7 +80,7 @@ def filter(name, zone, year, mq, offence):
     mrange = ""
     y1, y2 = 0, 0
     
-    print(mq)
+    # print(mq)
 
     if str(mq).find('all') == -1:
         # If it is a single month entry, i.e. no - found, mrange is just that one month
@@ -118,7 +122,7 @@ def filter(name, zone, year, mq, offence):
     # Below is for a more descriptive query result
     # query += "SELECT Localities." + sub_zone + ", " + "Crime, Year_fn, Localities." + zone + ", SUM(" + mrange + ") AS Total FROM (Crime LEFT OUTER JOIN Localities ON Crime.Suburb = Localities.Suburb)"
 
-    print(y1, y2, sub_zone, zone, mrange, offence, name)
+    # print(y1, y2, sub_zone, zone, mrange, offence, name)
 
     allmonth = "jul + aug + sep + oct + nov + dec + jan + feb + mar + apr + may + jun"
 
@@ -192,7 +196,7 @@ def filter(name, zone, year, mq, offence):
 
     # conn.commit()
 
-    print(query0)
+    print(query0) #unfiltered query
     
     # Print output to command line
     c.execute(query0)
@@ -219,7 +223,7 @@ def filter(name, zone, year, mq, offence):
     else:
         query1 += "SELECT " + sub_zone + ", total FROM unfiltered"
     query1 += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
-    print(query1)
+    print(query1) #filtered query
     c.execute(query1)
     j = 0
     filtered = []
@@ -233,15 +237,158 @@ def filter(name, zone, year, mq, offence):
     # data = statobject()
 
 
-    graphs = []
-    anomalies = []
-    anomalies = convert(anomalies, ["name", "stat"])
+    # graphs = []
+    # anomalies = [] #empty for now
+    # anomalies = convert(anomalies, ["name", "stat"])
     # graphs, anomalies = statistics(unfiltered)
     # return filtered, graphs, anomalies
-    # return filtered, anomalies
-    return filtered
-
+    #graphs, anomalies = statistics(filtered, unfiltered)
+    fig, anomalies = statistics(filtered, unfiltered, mrange)
+    # print(filtered)
     
+    # print('it works')
+    # plt.savefig('test.png')
+    # plt.show()
+
+    # if anomalies == []:
+    #     anomalies = 'CHOOSE BETTER QUERY' #CHANGE THIS PLEASE
+
+    data = statobject(anomalies, fig, offence)
+    data.plt.savefig('test2.png')
+    print(data.anomalies_text)
+    data.plt.show()
+    anomalies = convert(anomalies, ["name", "year", "mean", "std_e", "observation", "p-value"])
+    print(anomalies)
+
+    # print(anomalies)
+    # Returns the filtered data to make heatmap, anomaly information, and data object holding textual anomaly information and graph
+    return filtered, anomalies, data
+
+def statistics(filtered, unfiltered, mrange):
+    #think of more meaningful labelling methods if possible
+    #add x and y labels
+    name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
+    year_list = unfiltered['year_fn'].drop_duplicates().sort_values().tolist()
+    temp1 = unfiltered[unfiltered.columns[[0,1]]]
+    if '+' not in mrange:
+        temp2 = unfiltered[mrange]
+    elif '+' in mrange:
+        temp2 = unfiltered[mrange[1:-1].split('+')]
+    dataframe = pandas.concat([temp1, temp2], axis=1)
+    if len(year_list) > 5:
+        for i in range(len(name_list)):
+            values = unfiltered.loc[unfiltered['name'] == name_list[i]]
+            extracted_values = values[values.columns[-1:]].values.tolist()
+            plot_values = []
+            for i in extracted_values:
+                plot_values += i
+            plt.plot(year_list, plot_values)
+        plt.legend(name_list)
+        plt.xticks(rotation=45)
+    elif len(year_list) <= 5:
+        #if possible, highlight queried distributions????
+        #plot based on months (up to 60 months)
+        for i in range(len(name_list)):
+            values = dataframe.loc[dataframe['name'] == name_list[i]]
+            extracted_values = values[values.columns[2:]].values.tolist()
+            plot_values = []
+            for i in extracted_values:
+                plot_values += i
+            months = []
+            for i in range(len(year_list)):
+                months += values[values.columns[2:]].columns.tolist()
+            # print(extracted_values)
+            # print(months)
+            count = 0
+            for i in year_list:
+                for j in range(len(values[values.columns[2:]].columns.tolist())):
+                    months[count] += str(i)[2:]
+                    count += 1
+            plt.plot(months, plot_values)
+        plt.legend(name_list)
+        plt.xticks(rotation=45)
+
+    #plt.show()
+
+    temp = []
+    anomalies = []
+    if len(year_list) > 1:
+        for a in range(len(name_list)):
+            values = dataframe.loc[dataframe['name'] == name_list[a]]
+            extracted_values = values[values.columns[2:]].values.tolist()
+            plot_values = []
+            for i in extracted_values:
+                plot_values += i
+            months = []
+            for i in range(len(year_list)):
+                months += values[values.columns[2:]].columns.tolist()
+            count = 0
+            for i in year_list:
+                for j in range(len(values[values.columns[2:]].columns.tolist())):
+                    months[count] += str(i)[2:]
+                    count += 1
+            # nums = len(plot_values)
+            # mean = np.mean(plot_values)
+            # count = 0
+            # for k in extracted_values:
+            #     std_e = stats.sem(k)
+            #     result = stats.ttest_1samp(k, mean)
+            #     temp.append([name_list[a], year_list[count], mean, std_e, sum(k), result.pvalue])
+            #     count += 1
+
+            total = []
+            for k in extracted_values:
+                total.append(sum(k))
+            mean = np.mean(total)
+            std_e = stats.sem(total)
+            # result = stats.ttest_1samp(total, mean)
+            # Where k is an array that represents the sample
+            count = 0
+            for k in extracted_values:
+                t_value = (sum(k)-mean)/(std_e)
+                p_value = stats.t.sf(t_value, df = (len(total) - 1))
+                temp.append([name_list[a], year_list[count], mean, std_e, sum(k), p_value])
+                count += 1
+
+            
+        for i in temp:
+            if i[-1] < 0.05:
+                anomalies.append(i)
+    elif len(year_list) <= 1:
+        for a in range(len(name_list)):
+            t_value = []
+            p_value = []
+            #are we comparing against rest of the year, or specifically this sample size?
+            values = dataframe.loc[dataframe['name'] == name_list[a]]
+            extracted_values = values[values.columns[2:]].values.tolist()
+            month_list = values[values.columns[2:]].columns.tolist()
+            plot_values = []
+            for i in extracted_values:
+                plot_values += i
+            num = len(plot_values)
+            # print(plot_values)
+            mean = np.mean(plot_values)
+            std_e = stats.sem(plot_values)
+            for i in plot_values:
+                t_value.append((i-mean)/(std_e))
+            for i in t_value:
+                p_value.append(stats.t.sf(i, df = (num -1)))
+            count = 0
+            for i, k in enumerate(p_value):
+                if k < 0.05:
+                    anomalies.append([name_list[a], month_list[count], mean, std_e, extracted_values[0][i], k])
+                count += 1
+
+    #stats.ttest_1samp
+    #(calculated mean-sample value)/standard error
+    ##observed value being sum_counts, caluclated mean being query/sample mean
+    ##sed = (std(population)/sqrt(sample_count))
+    #If abs(t-statistic) <= critical value: Accept null hypothesis that the means are equal.
+    #If abs(t-statistic) > critical value: Reject the null hypothesis that the means are equal.
+    #If p > alpha: Accept null hypothesis that the means are equal.
+    #If p <= alpha: Reject null hypothesis that the means are equal.
+
+    return plt.figure(1), anomalies
 
 def distribution(mq):
     # Collects the months whose data are to be summed, scans from m0 to m1 collecting
@@ -359,27 +506,43 @@ def fill_table(c, file_name, table):
 # Converts list to pandas data frame    
 def convert(list, cols):
     df = pandas.DataFrame(list, columns = cols)
-    print(df)
+    # print(df)
     return df
 
 # anomalydata = [["Perth", 30], ["Northbridge", 23]]
 # data = statobject(anomalydata, unfiltered)
 
-# class statobject:
-#     def __init__(self, anomalydata, unfiltered):
-#         # Text to be displayed in panel 1 summarised anomalies.
-#         anomalies_text = textanomalies(anomalydata)
-#         plt = makegraph(unfiltered)
-#         def getText():
-#             return self.anomalies_text
-#         def getGraph():
-#             plt.show(
+class statobject:
+    def __init__(self, anomalydata, fig, offence):
+        # Text to be displayed in panel 1 summarised anomalies.
+        self.anomalies_text = ""
+        # print(anomalydata)
+        if anomalydata != []:
+            self.anomalies_text = text(anomalydata, offence)
+        self.plt = fig
+
+def text(anomalydata, offence):
+    text = ""
+    for i in range(len(anomalydata)):
+        period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
+        percent = abs(anomalydata[i][4]-anomalydata[i][2])/anomalydata[i][2]
+        text += period + " " + name + " had " + str(round(percent*100, 2)) + "% " + change + " " + offence + " than average\n"
+    return text
+
+# 2018 kings park had 30% higher stealing than average
 
 
 # Name, zone, year, month/quarter, crime
-filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') 
+filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
+# filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
+# filter('perth', 'station', '2014-15', 'jul-oct', 'stealing') # 1 year
+# filter('perth', 'station', '2014-15', 'jul', 'stealing') #1 year, 1 month
+# filter('perth', 'station', '2014-15-2019-20', 'jul', 'stealing') # <5ysears, 1 month, fix
+# filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
 
 #perth district = 92571, wembley station = 34120
+
+
 
 
 

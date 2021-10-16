@@ -149,7 +149,7 @@ def choropleth(query):
     #print(results)
     #print(stat)
     #plt.show(ax)
-    results = filter.filter(query[0], query[1], query[2], query[3], query[4])
+    results, anomalies, data = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
@@ -237,6 +237,7 @@ def choropleth(query):
     ).add_to(choropleth)
 
     choropleth.save('trial.html')
+    return data
     
 def main():
     for file in FILES:
