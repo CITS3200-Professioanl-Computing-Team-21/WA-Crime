@@ -150,6 +150,7 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         url = QtCore.QUrl.fromLocalFile("/stations.html")
         self.browser.load(url)
         self.allow_input(True)
+        self.textEdit.setText(self.cache_data.getText())
         self.update = True  # release lock
     
     # prevents new inputs will html is generating
