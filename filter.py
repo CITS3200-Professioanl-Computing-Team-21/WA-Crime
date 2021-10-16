@@ -283,12 +283,13 @@ def statistics(filtered, unfiltered, mrange):
     if len(year_list) > 5:
         for i in range(len(name_list)):
             values = unfiltered.loc[unfiltered['name'] == name_list[i]]
+            data_years = values[values.columns[1]].values.tolist()
             extracted_values = values[values.columns[-1:]].values.tolist()
             plot_values = []
             for i in extracted_values:
                 plot_values += i
             print(mrange)
-            plt.plot(year_list, plot_values, marker='o')
+            plt.plot(data_years, plot_values, marker='o')
         plt.legend(name_list)
         plt.xticks(rotation=45)
         plt.xlabel('Years/Months Distribution')
