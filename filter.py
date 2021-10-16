@@ -1,4 +1,8 @@
 import csv, sqlite3, os, pandas
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy as sp
+from scipy import stats
 
 # Desktop (windows) works for relative addresses for some reason, Mac doesn't
 # Desktop location: C:/Users/User/OneDrive/Uni/CITS3200/WA-Crime/data.db
@@ -192,7 +196,7 @@ def filter(name, zone, year, mq, offence):
 
     # conn.commit()
 
-    print(query0)
+    print(query0) #unfiltered query
     
     # Print output to command line
     c.execute(query0)
@@ -219,7 +223,7 @@ def filter(name, zone, year, mq, offence):
     else:
         query1 += "SELECT " + sub_zone + ", total FROM unfiltered"
     query1 += " GROUP BY " + sub_zone + " ORDER BY " + sub_zone
-    print(query1)
+    print(query1) #filtered query
     c.execute(query1)
     j = 0
     filtered = []
@@ -230,13 +234,182 @@ def filter(name, zone, year, mq, offence):
     filtered = convert(filtered, ["name", "sum"])
 
     graphs = []
-    anomalies = []
+    anomalies = [] #empty for now
     anomalies = convert(anomalies, ["name", "stat"])
     # graphs, anomalies = statistics(unfiltered)
     # return filtered, graphs, anomalies
-    return filtered, anomalies
-
+    #graphs, anomalies = statistics(filtered, unfiltered)
+    fig, anomalies = statistics(filtered, unfiltered, mrange)
     
+    print('it works')
+    plt.savefig('test.png')
+    plt.show()
+
+    if anomalies == []:
+        anomalies = 'CHOOSE BETTER QUERY' #CHANGE THIS PLEASE
+
+    print(anomalies)
+    return filtered, plt.figure(1), anomalies
+
+def statistics(filtered, unfiltered, mrange):
+    #think of more meaningful labelling methods if possible
+    #add x and y labels
+    name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
+    year_list = unfiltered['year_fn'].drop_duplicates().sort_values().tolist()
+    temp1 = unfiltered[unfiltered.columns[[0,1]]]
+    if '+' not in mrange:
+        temp2 = unfiltered[mrange]
+    elif '+' in mrange:
+        temp2 = unfiltered[mrange[1:-1].split('+')]
+    dataframe = pandas.concat([temp1, temp2], axis=1)
+    if len(year_list) > 5:
+        for i in range(len(name_list)):
+            values = unfiltered.loc[unfiltered['name'] == name_list[i]]
+            extracted_values = values[values.columns[-1:]].values.tolist()
+            plot_values = []
+            for i in extracted_values:
+                plot_values += i
+            plt.plot(year_list, plot_values, marker='o')
+        plt.legend(name_list)
+        plt.xticks(rotation=45)
+        plt.xlabel('Years/Months Distribution')
+        plt.ylabel('Crime Counts')
+
+    elif len(year_list) <= 5:
+        #if possible, highlight queried distributions????
+        #plot based on months (up to 60 months)
+        for i in range(len(name_list)):
+            values = dataframe.loc[dataframe['name'] == name_list[i]]
+            extracted_values = values[values.columns[2:]].values.tolist()
+            plot_values = []
+            for i in extracted_values:
+                plot_values += i
+            months = []
+            for i in range(len(year_list)):
+                months += values[values.columns[2:]].columns.tolist()
+            #print(extracted_values)
+            #print(plot_values)
+            #print(months)
+            count = 0
+            for i in year_list:
+                for j in range(len(values[values.columns[2:]].columns.tolist())):
+                    months[count] += str(i)[2:]
+                    count += 1
+            plt.plot(months, plot_values, marker='o')
+        plt.legend(name_list)
+        plt.xticks(rotation=45)
+        plt.xlabel('Years/Months Distribution')
+        plt.ylabel('Crime Counts')
+
+    #plt.show()
+    
+    temp = []
+    anomalies = []
+    if '+' in mrange:
+        if len(year_list) > 1:
+            for a in range(len(name_list)):
+                values = dataframe.loc[dataframe['name'] == name_list[a]]
+                extracted_values = values[values.columns[2:]].values.tolist()
+                plot_values = []
+                for i in extracted_values:
+                    plot_values += i
+                months = []
+                for i in range(len(year_list)):
+                    months += values[values.columns[2:]].columns.tolist()
+                count = 0
+                for i in year_list:
+                    for j in range(len(values[values.columns[2:]].columns.tolist())):
+                        months[count] += str(i)[2:]
+                        count += 1
+                nums = len(plot_values)
+                mean = np.mean(plot_values)
+                count = 0
+                for k in extracted_values:
+                    std_e = stats.sem(k)
+                    result = stats.ttest_1samp(k, mean)
+                    temp.append([name_list[a], year_list[count], mean, std_e, result.pvalue])
+                    count += 1
+            for i in temp:
+                if i[-1] < 0.05:
+                    anomalies.append(i)
+        elif len(year_list) <= 1:
+            for a in range(len(name_list)):
+                t_value = []
+                p_value = []
+                #are we comparing against rest of the year, or specifically this sample size?
+                values = dataframe.loc[dataframe['name'] == name_list[a]]
+                extracted_values = values[values.columns[2:]].values.tolist()
+                month_list = values[values.columns[2:]].columns.tolist()
+                plot_values = []
+                for i in extracted_values:
+                    plot_values += i
+                num = len(plot_values)
+                mean = np.mean(plot_values)
+                std_e = stats.sem(plot_values)
+                for i in plot_values:
+                    t_value.append((i-mean)/(std_e))
+                for i in t_value:
+                    p_value.append(stats.t.sf(i, df = (num -1)))
+                count = 0
+                for i in p_value:
+                    if i < 0.05:
+                        anomalies.append([name_list[a], month_list[count], mean, std_e, i])
+                    count += 1
+    elif '+' not in mrange:
+        if len(year_list) > 1:
+            for a in range(len(name_list)):
+                t_value = []
+                p_value = []
+                values = dataframe.loc[dataframe['name'] == name_list[a]]
+                extracted_values = values[values.columns[2:]].values.tolist()
+                plot_values = []
+                for i in extracted_values:
+                    plot_values += i
+                num = len(plot_values)
+                mean = np.mean(plot_values)
+                std_e = stats.sem(plot_values)
+                for i in plot_values:
+                    t_value.append((i-mean)/(std_e))
+                for i in t_value:
+                    p_value.append(stats.t.sf(i, df = (num -1)))
+                count = 0
+                for i in p_value:
+                    if i < 0.05:
+                        anomalies.append([name_list[a], mrange + str(year_list[count])[2:], mean, std_e, i])
+                    count += 1
+        elif len(year_list) <= 1: #does this need any extra fixing?
+            for a in range(len(name_list)):
+                t_value = []
+                p_value = []
+                values = dataframe.loc[dataframe['name'] == name_list[a]]
+                extracted_values = values[values.columns[2:]].values.tolist()
+                plot_values = []
+                for i in extracted_values:
+                    plot_values += i
+                num = len(plot_values)
+                mean = np.mean(plot_values)
+                std_e = stats.sem(plot_values)
+                for i in plot_values:
+                    t_value.append((i-mean)/(std_e))
+                for i in t_value:
+                    p_value.append(stats.t.sf(i, df = (num -1)))
+                count = 0
+                for i in p_value:
+                    if i < 0.05:
+                        anomalies.append([name_list[a], mrange + str(year_list[count])[2:], mean, std_e, i])
+                    count += 1
+    #stats.ttest_1samp
+    #(calculated mean-sample value)/standard error
+    ##observed value being sum_counts, caluclated mean being query/sample mean
+    ##sed = (std(population)/sqrt(sample_count))
+    #If abs(t-statistic) <= critical value: Accept null hypothesis that the means are equal.
+    #If abs(t-statistic) > critical value: Reject the null hypothesis that the means are equal.
+    #If p > alpha: Accept null hypothesis that the means are equal.
+    #If p <= alpha: Reject null hypothesis that the means are equal.
+
+    #print(p_value)
+
+    return plt.figure(1), anomalies
 
 def distribution(mq):
     # Collects the months whose data are to be summed, scans from m0 to m1 collecting
@@ -359,7 +532,12 @@ def convert(list, cols):
 
 
 # Name, zone, year, month/quarter, crime
-filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') 
+#filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
+#filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
+#filter('perth', 'station', '2014-15', 'jul-oct', 'stealing') # 1 year
+filter('perth', 'station', '2014-15', 'jul', 'stealing') #1 year, 1 month
+#filter('perth', 'station', '2014-15-2019-20', 'jul', 'stealing') # <5years, 1 month, fix
+#filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
 
 #perth district = 92571, wembley station = 34120
 
