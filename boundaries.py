@@ -149,19 +149,26 @@ def choropleth(query):
     #print(results)
     #print(stat)
     #plt.show(ax)
-    results = filter.filter(query[0], query[1], query[2], query[3], query[4])
+    results, anomalies, plot = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
     if query[1] == 'suburb' or 'station':
         data = gpd.read_file(LANDGATE)
         starting_zoom = 12
+        fields = ['name', 'postcode', 'land_area','sum']
+        aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
     if query[1] == 'district':
-        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/stations.geojson')
+        #C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson
+        data = gpd.read_file(r'C:\Users\seanl\myprojects\cits3200-project\WA-Crime\zones\stations.geojson')
         starting_zoom = 9
+        fields = ['name', 'zone_type', 'sum']
+        aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if query[1] == 'region':
-        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/districts.geojson')
+        data = gpd.read_file(r'C:\Users\seanl\myprojects\cits3200-project\WA-Crime\zones\districts.geojson')
         starting_zoom = 6
+        fields = ['name', 'zone_type', 'sum']
+        aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     data['name'] = data['name'].str.upper()
     # for_plotting = results.merge(data, left_on = 'name', right_on = 'name')
     merged2 = data.merge(results,on="name")
@@ -213,15 +220,15 @@ def choropleth(query):
                     'fillOpacity': 0.50, 
                     'weight': 0.1}
 
-    #Creating popup tooltip object
+    # Creating popup tooltip object
     NIL = folium.features.GeoJson(
         merged2,
         style_function=style_function, 
         control=False,
         highlight_function=highlight_function, 
         tooltip=folium.features.GeoJsonTooltip(
-            fields=['name', 'postcode', 'land_area','sum'],
-            aliases=['Name', 'Postcode', 'Land Area', query[-1].upper()+' Frequency'],
+            fields=fields,
+            aliases=aliases,
             style=("background-color: white; color: #333333; font-family: arial; font-size: 12px; padding: 10px;")))
 
     #Adding tooltip object to the map
@@ -235,7 +242,12 @@ def choropleth(query):
         popup=folium.Popup(query[0].upper()),
     ).add_to(choropleth)
 
-    choropleth.save('trial.html')
+    with open(r'C:\Users\seanl\myprojects\cits3200-project\WA-Crime\coordinates.json') as f:
+        coordinates = json.load(f)
+    coordinates = dict(coordinates)
+
+    choropleth.save('generated_map.html')
+    return plot
     
 def main():
     for file in FILES:
