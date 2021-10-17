@@ -269,6 +269,8 @@ def filter(name, zone, year, mq, offence):
     # if anomalies == []:
     #     anomalies = 'CHOOSE BETTER QUERY' #CHANGE THIS PLEASE
 
+    # graph(unfiltered, mrange)
+
     data = statobject(anomalies, offence, unfiltered, mrange)
     # print(plt.gcf().number)
     # plt.show()
@@ -284,7 +286,7 @@ def filter(name, zone, year, mq, offence):
     return filtered, anomalies, data
 
 def graph(unfiltered, mrange):
-    name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
+    # name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
     year_list = unfiltered['year_fn'].drop_duplicates().sort_values().tolist()
     temp1 = unfiltered[unfiltered.columns[[0,1]]]
     if '+' not in mrange:
@@ -292,12 +294,23 @@ def graph(unfiltered, mrange):
     elif '+' in mrange:
         temp2 = unfiltered[mrange[1:-1].split('+')]
     dataframe = pandas.concat([temp1, temp2], axis=1)
+
+    # print(unfiltered)
+    sorted = unfiltered.sort_values(by=['total'], ascending=False)
+    name_list = sorted['name'].drop_duplicates().tolist()
+    # print(unfiltered['name'].drop_duplicates().tolist())
+    # print(unfiltered)
+
     if len(year_list) > 5:
-        for i in range(len(name_list)):
+        limit = 5
+        if len(name_list) < limit:
+            limit = len(name_list)
+        for i in range(limit):
             values = unfiltered.loc[unfiltered['name'] == name_list[i]]
             data_years = values[values.columns[1]].values.tolist()
-            # if len(data_years) != len(year_list): 
-            #     continue
+            if len(data_years) != len(year_list):
+                # i -= 1 
+                continue
             extracted_values = values[values.columns[-1:]].values.tolist()
             # if len(extracted_values) == 60:
             #     e = 4
@@ -313,39 +326,44 @@ def graph(unfiltered, mrange):
     elif len(year_list) <= 5:
         #if possible, highlight queried distributions????
         #plot based on months (up to 60 months)
-        if '+' in mrange:
-            for i in range(len(name_list)):
-                values = dataframe.loc[dataframe['name'] == name_list[i]]
-                extracted_values = values[values.columns[2:]].values.tolist()
-                data_years = values[values.columns[1]].values.tolist()
-                # if len(data_years) != len(year_list): 
-                #     continue
-                plot_values = []
-                for i in extracted_values:
-                    plot_values += i
-                months = []
-                for i in range(len(data_years)):
-                    months += values[values.columns[2:]].columns.tolist()
-                #print(extracted_values)
-                #print(plot_values)
-                #print(months)
-                count = 0
-                for i in data_years:
-                    for j in range(len(values[values.columns[2:]].columns.tolist())):
-                        months[count] += str(i)[2:]
-                        count += 1
-                plt.plot(months, plot_values, marker='o')
-            plt.legend(name_list)
-            plt.xticks(rotation=45)
-            plt.xlabel('Years/Months Distribution')
-            plt.ylabel('Crime Counts')
-        elif '+' not in mrange:
-            temp = dataframe.groupby('name')[mrange].sum()
-            plt.bar(name_list, list(temp))
-            plt.xticks(rotation=45)
-            plt.xlabel('Locations')
-            plt.ylabel('Crime Counts')
-            plt.title(mrange + str(year_list)[3:-1])
+        # if '+' in mrange:
+        limit = 5
+        if len(name_list) < limit:
+            limit = len(name_list)
+        for i in range(limit):
+            values = dataframe.loc[dataframe['name'] == name_list[i]]
+            extracted_values = values[values.columns[2:]].values.tolist()
+            data_years = values[values.columns[1]].values.tolist()
+            if len(data_years) != len(year_list):
+                # i -= 1 
+                continue
+            plot_values = []
+            for i in extracted_values:
+                plot_values += i
+            months = []
+            for i in range(len(data_years)):
+                months += values[values.columns[2:]].columns.tolist()
+                # months.sort(key=)
+            #print(extracted_values)
+            #print(plot_values)
+            #print(months)
+            count = 0
+            for i in data_years:
+                for j in range(len(values[values.columns[2:]].columns.tolist())):
+                    months[count] += str(i)[2:]
+                    count += 1
+            plt.plot(months, plot_values, marker='o')
+        plt.legend(name_list)
+        plt.xticks(rotation=45)
+        plt.xlabel('Years/Months Distribution')
+        plt.ylabel('Crime Counts')
+        # elif '+' not in mrange:
+        #     temp = dataframe.groupby('name')[mrange].sum()
+        #     plt.bar(name_list, list(temp))
+        #     plt.xticks(rotation=45)
+        #     plt.xlabel('Locations')
+        #     plt.ylabel('Crime Counts')
+        #     plt.title(mrange + str(year_list)[3:-1])
 
     plt.show()
 
@@ -485,6 +503,13 @@ def distribution(mq):
 
             m0 = mq[0]
             m1 = mq[1]
+
+            # If input query had months out of order, fix
+            if months.index(m0) > months.index(m1):
+                temp = m1
+                m1 = m0
+                m0 = temp
+
             mi = months.index(m0)
             curr = m0
             while curr != m1:
@@ -602,16 +627,29 @@ def text(anomalydata, offence):
         offence = "crime"
     text = ""
 
-    
-
-    text += "By place name\n\n"
+    text += "By place name:\n\n"
     # By place name
     for i in range(len(anomalydata)):
         period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
         percent = abs(anomalydata[i][4]-anomalydata[i][2])/anomalydata[i][2]
-        text += period + " " + name + " had " + str(round(percent*100, 2)) + "% " + change + " " + offence + " than average\n\n"
+        text += name + " (" + period + ")" " had " + str(round(percent*100, 2)) + "% " + change + " " + offence + " than average\n\n"
+    
+    anomalydata.sort(key=year, reverse=True)
+    text += "\n\nBy date (latest):\n\n"
+
+    for i in range(len(anomalydata)):
+        period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
+        percent = abs(anomalydata[i][4]-anomalydata[i][2])/anomalydata[i][2]
+        text += name + " (" + period + ")" " had " + str(round(percent*100, 2)) + "% " + change + " " + offence + " than average\n\n"
 
     return text
+
+def year(anom):
+    if type(anom[1]) is int:
+        return anom[1]
+    else:
+        months = ["jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun"]
+        return months.index(anom[1])
 
 # 2018 kings park had 30% higher stealing than average
 
@@ -619,7 +657,7 @@ def text(anomalydata, offence):
 # Name, zone, year, month/quarter, crime
 # filter('mandurah', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', 'all', 'all', 'all') 
-# filter('albany', 'station', 'all', 'all', 'all') 
+filter('albany', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
 # filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
 # filter('perth', 'station', '2014-15', 'jul-oct', 'stealing') # 1 year
@@ -627,7 +665,7 @@ def text(anomalydata, offence):
 # filter('perth', 'station', '2014-15-2019-20', 'jul', 'stealing') # <5ysears, 1 month, fix
 # filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
 # filter('nedlands', 'suburb', '2016-17-2019-20', 'mar-aug', 'drug offences')
-filter('adcock gorge', 'suburb', 'all', 'all', 'all')
+# filter('gabingullup', 'suburb', '2013-14-2019-20', 'dec-jul', 'all')
 
 
 #perth district = 92571, wembley station = 34120
