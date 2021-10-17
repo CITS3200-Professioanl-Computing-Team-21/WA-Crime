@@ -153,6 +153,8 @@ def choropleth(query):
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
+    dir = os.getcwd()
+
     if query[1] == 'suburb' or 'station':
         data = gpd.read_file(LANDGATE)
         starting_zoom = 12
@@ -160,12 +162,14 @@ def choropleth(query):
         aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
     if query[1] == 'district':
         #C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson')
+        stations = dir + "/zones/stations.geojson"
+        data = gpd.read_file(r'{}'.format(stations))
         starting_zoom = 9
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if query[1] == 'region':
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\districts.geojson')
+        districts = dir + "/zones/districts.geojson"
+        data = gpd.read_file(r'{}'.format(districts))
         starting_zoom = 6
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
@@ -242,7 +246,8 @@ def choropleth(query):
         popup=folium.Popup(query[0].upper()),
     ).add_to(choropleth)
 
-    with open(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\coordinates.json') as f:
+    coordinates = dir + "/coordinates.json"
+    with open(r'{}'.format(coordinates)) as f:
         coordinates = json.load(f)
     coordinates = dict(coordinates)
 
