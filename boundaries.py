@@ -222,7 +222,9 @@ def choropleth(query):
 
     # finding coordinates of starting location
     if query[0].lower() != 'all':
-        if query[1] == 'suburb' or 'station':
+        if query[1] == 'suburb':
+            coordinates = coordinates_suburbs
+        if query[1] == 'station':
             coordinates = coordinates_stations
         if query[1] == 'district':
             coordinates = coordinates_districts
