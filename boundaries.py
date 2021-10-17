@@ -181,6 +181,15 @@ def choropleth(query):
     DISTRICTS = path + "/centroids/district_centroids.json"
     REGIONS = path + "/centroids/region_centroids.json"
 
+    with open(r'{}'.format(COORDINATES)) as f:
+        coordinates_suburbs = json.load(f)
+    with open(r'{}'.format(STATIONS)) as f:
+        coordinates_stations = json.load(f)
+    with open(r'{}'.format(DISTRICTS)) as f:
+        coordinates_districts = json.load(f)
+    with open(r'{}'.format(REGIONS)) as f:
+        coordinates_regions = json.load(f)
+
     results, anomalies, plot = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
@@ -215,10 +224,15 @@ def choropleth(query):
 
     # finding coordinates of starting location
     if query[0].lower() != 'all':
-        loc = Nominatim(user_agent="GetLoc")
+        if query[1] == 'suburb' or 'station':
+            coordinates = coordinates_stations
+        if query[1] == 'district':
+            coordinates = coordinates_districts
+        if query[1] == 'region':
+            coordinates = coordinates_regions 
         try:
-            getLoc = loc.geocode(query[0]+', WA, Australia')
-            starting_point = [getLoc.latitude, getLoc.longitude]
+            loc = coordinates[query[0]]
+            starting_point = [loc[0], loc[1]]
         except: 
         # starting location coordinates [lat, long] set to Perth if no coordinates found
             starting_point = [-32, 116]
