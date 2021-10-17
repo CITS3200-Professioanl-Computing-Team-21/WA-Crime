@@ -113,6 +113,9 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
     features_stations = []
     features_districts = []
     features_regions = []
+    stations_dict = {}
+    districts_dict = {}
+    regions_dict = {}
     for zone_type in final_data:
         if zone_type != 'suburbs':
             for place in final_data[zone_type]:
@@ -120,15 +123,28 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
                 for location in final_data[zone_type][place]:
                     polygons.append(shape(final_data['suburbs'][location]))
     #             boundary = gpd.GeoSeries(unary_union(polygons).simplify(tolerance=0.001))
-                polygon2 = unary_union(polygons).simplify(tolerance=0.001)
+                polygon = unary_union(polygons).simplify(tolerance=0.001)
+                try:
+                    x = polygon.centroid.x
+                    y = polygon.centroid.y
+                except IndexError:
+                    x = ''
+                    y = ''
     #             polygon = MultiPolygon(boundary)
                 if zone_type == 'stations':
-                    features_stations.append(Feature(geometry=polygon2, properties={'zone_type': zone_type, 'name': place}))
+                    features_stations.append(Feature(geometry=polygon, properties={'zone_type': zone_type, 'name': place}))
+                    stations_dict[place] = [y, x]
                 if zone_type == 'districts':
-                    features_districts.append(Feature(geometry=polygon2, properties={'zone_type': zone_type, 'name': place}))
+                    features_districts.append(Feature(geometry=polygon, properties={'zone_type': zone_type, 'name': place}))
+                    districts_dict[place] = [y, x]
                 if zone_type == 'regions':
-                    features_regions.append(Feature(geometry=polygon2, properties={'zone_type': zone_type, 'name': place}))
+                    features_regions.append(Feature(geometry=polygon, properties={'zone_type': zone_type, 'name': place}))
+                    regions_dict[place] = [y, x]
     #             final_data[zone_type][place] = boundary.to_json()
+
+    landgate_gpd = gpd.read_file(LANDGATE)
+    selected_features = landgate_gpd[['name', 'postcode', 'land_area','geometry']]
+    selected_features.to_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/suburbs.geojson', driver="GeoJSON")
 
     feature_collection_stations = FeatureCollection(features_stations)
     with open('stations.geojson', 'w') as f:
@@ -139,34 +155,53 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
     feature_collection_regions = FeatureCollection(features_regions)
     with open('regions.geojson', 'w') as f:
         dump(feature_collection_regions, f)
+    
+    jsonString = json.dumps(stations_dict)
+    jsonFile = open("station_centroids.json", "w")
+    jsonFile.write(jsonString)
+    jsonFile.close()
+
+    jsonString = json.dumps(districts_dict)
+    jsonFile = open("district_centroids.json", "w")
+    jsonFile.write(jsonString)
+    jsonFile.close()
+
+    jsonString = json.dumps(regions_dict)
+    jsonFile = open("region_centroids.json", "w")
+    jsonFile.write(jsonString)
+    jsonFile.close()
 
     return(final_data)
 
 def choropleth(query):
     #results, stat, png = mp.main(query)
     path = os.getcwd()
+    COORDINATES = path + "/centroids/coordinates.json"
+    STATIONS = path + "/centroids/station_centroids.json"
+    DISTRICTS = path + "/centroids/district_centroids.json"
+    REGIONS = path + "/centroids/region_centroids.json"
 
     results, anomalies, plot = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
     if (query[1] == 'suburb') or (query[1] == 'station' and query[0].lower() != 'all'):
-        data = gpd.read_file(LANDGATE)
+        data = gpd.read_file(path + '/zones/suburbs.geojson')
         starting_zoom = 12
         fields = ['name', 'postcode', 'land_area','sum']
         aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'district' and query[0].lower() != 'all') or (query[1] == 'station' and query[0].lower() == 'all'):
-        data = gpd.read_file('stations.geojson')
+        data = gpd.read_file(path + '/zones/stations.geojson')
         starting_zoom = 9
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'region' and query[0].lower() != 'all') or (query[1] == 'district' and query[0].lower() == 'all'):
-        data = gpd.read_file('districts.geojson')
+        data = gpd.read_file(path + '/zones/districts.geojson')
         starting_zoom = 5
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'region' and query[0].lower() == 'all'):
-        data = gpd.read_file('regions.geojson')
+        data = gpd.read_file(path + '/zones/regions.geojson')
         starting_zoom = 5
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
@@ -239,33 +274,40 @@ def choropleth(query):
     choropleth.add_child(NIL)
     choropleth.keep_in_front(NIL)
     folium.LayerControl().add_to(choropleth)
-
-    coordinates = path + "/coordinates.json"
-    with open(r'{}'.format(coordinates)) as f:
-        coordinates = json.load(f)
-    coordinates = dict(coordinates)
     
-    if isinstance(anomalies, pd.DataFrame):
-        anomaly_locations = list(anomalies['name'].unique())
-        final_df =  anomalies[['name', 'year', 'observation', 'mean']]
-        final_df.rename(columns={'year': 'Year', 'observation': 'Observed Crime Numbers', 'mean': 'Mean Crime Numbers'}, inplace=True)
-        try:
-            for i in anomaly_locations:
-                location = coordinates[i.lower()]
-                html_df = final_df.loc[final_df['name'] == i]
-                html_df.index = np.arange(1, len(html_df) + 1)
-                html = html_df.to_html(classes=
-                    "table table-striped table-hover table-condensed table-responsive")
-            # iframe = folium.IFrame(html=html,
-            #        width=100,
-            #        height=100)
-                folium.Marker(
-                    location=location, 
-                    icon=folium.Icon(color="blue",icon="map-pin", prefix='fa'),
-                    popup=folium.Popup(html),
-                ).add_to(choropleth)
-        except ValueError:
-            print('hi')
+    if query[0].lower() != 'all':
+        if isinstance(anomalies, pd.DataFrame):
+            anomaly_locations = list(anomalies['name'].unique())
+            final_df =  anomalies[['name', 'year', 'observation', 'mean']]
+            final_df.rename(columns={'year': 'Year', 'observation': 'Observed Crime Numbers', 'mean': 'Mean Crime Numbers'}, inplace=True)
+            try:
+                for i in anomaly_locations:
+                    if query[1] == 'suburb' or 'station':
+                        with open(r'{}'.format(COORDINATES)) as f:
+                            coordinates = json.load(f)
+                    if query[1] == 'district':
+                        with open(r'{}'.format(STATIONS)) as f:
+                            coordinates = json.load(f)
+                    if query[1] == 'region':
+                        with open(r'{}'.format(DISTRICTS)) as f:
+                            coordinates = json.load(f)
+                    coordinates = dict(coordinates)
+                    location = coordinates[i.lower()]
+                    if location != '':
+                        html_df = final_df.loc[final_df['name'] == i]
+                        html_df.index = np.arange(1, len(html_df) + 1)
+                        html = html_df.to_html(classes=
+                            "table table-striped table-hover table-condensed table-responsive")
+                    # iframe = folium.IFrame(html=html,
+                    #        width=100,
+                    #        height=100)
+                        folium.Marker(
+                            location=location, 
+                            icon=folium.Icon(color="blue",icon="map-pin", prefix='fa'),
+                            popup=folium.Popup(html),
+                        ).add_to(choropleth)
+            except ValueError:
+                print('hi')
 
     choropleth.save('generated_map.html')
     return plot
