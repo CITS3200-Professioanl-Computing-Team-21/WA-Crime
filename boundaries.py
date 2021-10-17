@@ -252,7 +252,11 @@ def choropleth(query):
 
     print(type(anomalies))
 
-    # with open(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\coordinates.json') as f:
+    # # with open(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\coordinates.json') as f:
+    # #     coordinates = json.load(f)
+    # # coordinates = dict(coordinates)
+    # coordinates = dir + "/coordinates.json"
+    # with open(r'{}'.format(coordinates)) as f:
     #     coordinates = json.load(f)
     # coordinates = dict(coordinates)
 

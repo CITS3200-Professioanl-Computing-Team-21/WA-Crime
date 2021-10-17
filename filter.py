@@ -1,4 +1,5 @@
 import csv, sqlite3, os, pandas
+from operator import sub
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
@@ -107,15 +108,27 @@ def filter(name, zone, year, mq, offence):
     zones = ['suburb', 'station', 'district', 'region']
     sub_zone = ""
 
-    # All selection for zone defaults to suburb, also resets sub_zone and name to 'all' so that all suburbs are selected.
-    if zone == 'all' or zone == 'suburb':
-        zone = 'suburb'
-        sub_zone = 'suburb'
-        name = 'all'
+    # # All selection for zone defaults to suburb, also resets sub_zone and name to 'all' so that all suburbs are selected.
+    # if zone == 'all' or zone == 'suburb':
+    #     zone = 'suburb'
+    #     sub_zone = 'suburb'
+    #     name = 'all'
 
-    # When name is 'all', we return all of that zone type, therefore no subzones. When name is not all, we return only the named zone and it's subzones.
+    # When name is 'all', we return all of that zone type, therefore no subzones. When name is not all, we return only the named zone and it's subzones. If zone is suburb, we return the station that named suburb belongs to.
     if name != 'all':
-        sub_zone = zones[zones.index(zone) - 1]
+        # A named suburb should instead return the station and its suburbs that the named suburb belongs to. Only 'all' type query should ever return the entire map.
+        if zone == 'suburb':
+            sub_zone = 'suburb'
+            zone = 'station'
+            get_station = "SELECT station FROM Localities WHERE suburb = '" + name + "'"
+            c.execute(get_station)
+            # print(c.fetchone())
+            name = c.fetchone()[0]
+            print(name)
+            # c.fetchall()[0]
+
+        else:
+            sub_zone = zones[zones.index(zone) - 1]
     else:
         sub_zone = zone
 
@@ -262,8 +275,9 @@ def filter(name, zone, year, mq, offence):
     # data.plt.savefig('test2.png')
     # print(data.anomalies_text)
     # data.plt.show()
-    anomalies = convert(anomalies, ["name", "year", "mean", "std_e", "observation", "p-value"])
-    print(anomalies)
+    if anomalies != []:
+        anomalies = convert(anomalies, ["name", "year", "mean", "std_e", "observation", "p-value"])
+    # print(anomalies)
 
     # print(anomalies)
     # Returns the filtered data to make heatmap, anomaly information, and data object holding textual anomaly information and graph
@@ -282,8 +296,8 @@ def graph(unfiltered, mrange):
         for i in range(len(name_list)):
             values = unfiltered.loc[unfiltered['name'] == name_list[i]]
             data_years = values[values.columns[1]].values.tolist()
-            if len(data_years) != len(year_list): 
-                continue
+            # if len(data_years) != len(year_list): 
+            #     continue
             extracted_values = values[values.columns[-1:]].values.tolist()
             # if len(extracted_values) == 60:
             #     e = 4
@@ -304,8 +318,8 @@ def graph(unfiltered, mrange):
                 values = dataframe.loc[dataframe['name'] == name_list[i]]
                 extracted_values = values[values.columns[2:]].values.tolist()
                 data_years = values[values.columns[1]].values.tolist()
-                if len(data_years) != len(year_list): 
-                    continue
+                # if len(data_years) != len(year_list): 
+                #     continue
                 plot_values = []
                 for i in extracted_values:
                     plot_values += i
@@ -375,28 +389,38 @@ def statistics(filtered, unfiltered, mrange):
             #     count += 1
 
             total = []
+
+            for i in range(len(extracted_values)):
+                extracted_values[i] = [k for k in extracted_values[i] if k != '']
+
             for k in extracted_values:
-                k = [i for i in k if i != '']
                 total.append(sum(k))
             mean = np.mean(total)
-            std_e = stats.sem(total)
+            # If total less than or equal to 1, then no std_d can be calculated, so skip
+            if len(total) <= 1:
+                continue
+            std_d = stats.tstd(total)
+            # If no std_d, can't determine p value, so skip
+            if std_d == 0.0:
+                continue
             # result = stats.ttest_1samp(total, mean)
             # Where k is an array that represents the sample
             count = 0
             for k in extracted_values:
-                k = [i for i in k if i != '']
-                t_value = (sum(k)-mean)/(std_e)
-                p_value = stats.t.sf(abs(t_value), df = (len(total) - 1))*2
-                temp.append([name_list[a], year_list[count], mean, std_e, sum(k), p_value])
+                z_value = (sum(k)-mean)/(std_d)
+                p_value = stats.norm.sf(abs(z_value))
+                temp.append([name_list[a], year_list[count], mean, std_d, sum(k), p_value])
                 count += 1
 
+
+        # print(temp)
             
         for i in temp:
             if i[-1] < 0.05:
                 anomalies.append(i)
     elif len(year_list) <= 1:
         for a in range(len(name_list)):
-            t_value = []
+            z_value = []
             p_value = []
             #are we comparing against rest of the year, or specifically this sample size?
             values = dataframe.loc[dataframe['name'] == name_list[a]]
@@ -406,17 +430,22 @@ def statistics(filtered, unfiltered, mrange):
             for i in extracted_values:
                 plot_values += i
             num = len(plot_values)
+            if num <= 1:
+                continue
             # print(plot_values)
             mean = np.mean(plot_values)
-            std_e = stats.sem(plot_values)
+            # std_e = stats.sem(plot_values)
+            std_d = stats.tstd(plot_values)
+            if std_d == 0.0:
+                continue
             for i in plot_values:
-                t_value.append((i-mean)/(std_e))
-            for i in t_value:
-                p_value.append(stats.t.sf(abs(i), df = (num -1))*2)
+                z_value.append((i-mean)/(std_d))
+            for i in z_value:
+                p_value.append(stats.norm.sf(abs(i)))
             count = 0
             for i, k in enumerate(p_value):
                 if k < 0.05:
-                    anomalies.append([name_list[a], month_list[count], mean, std_e, extracted_values[0][i], k])
+                    anomalies.append([name_list[a], month_list[count], mean, std_d, extracted_values[0][i], k])
                 count += 1
 
     #stats.ttest_1samp
@@ -572,10 +601,16 @@ def text(anomalydata, offence):
     if offence == "all":
         offence = "crime"
     text = ""
+
+    
+
+    text += "By place name\n\n"
+    # By place name
     for i in range(len(anomalydata)):
         period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
         percent = abs(anomalydata[i][4]-anomalydata[i][2])/anomalydata[i][2]
-        text += period + " " + name + " had " + str(round(percent*100, 2)) + "% " + change + " " + offence + " than average\n"
+        text += period + " " + name + " had " + str(round(percent*100, 2)) + "% " + change + " " + offence + " than average\n\n"
+
     return text
 
 # 2018 kings park had 30% higher stealing than average
@@ -584,7 +619,7 @@ def text(anomalydata, offence):
 # Name, zone, year, month/quarter, crime
 # filter('mandurah', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', 'all', 'all', 'all') 
-filter('albany', 'station', 'all', 'all', 'all') 
+# filter('albany', 'station', 'all', 'all', 'all') 
 # filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
 # filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
 # filter('perth', 'station', '2014-15', 'jul-oct', 'stealing') # 1 year
@@ -592,5 +627,7 @@ filter('albany', 'station', 'all', 'all', 'all')
 # filter('perth', 'station', '2014-15-2019-20', 'jul', 'stealing') # <5ysears, 1 month, fix
 # filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
 # filter('nedlands', 'suburb', '2016-17-2019-20', 'mar-aug', 'drug offences')
+filter('adcock gorge', 'suburb', 'all', 'all', 'all')
+
 
 #perth district = 92571, wembley station = 34120
