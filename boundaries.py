@@ -153,20 +153,24 @@ def choropleth(query):
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
 
-    if query[1] == 'suburb' or 'station':
+    if (query[1] == 'suburb') or (query[1] == 'station' and query[0].lower() != 'all'):
         data = gpd.read_file(LANDGATE)
         starting_zoom = 12
         fields = ['name', 'postcode', 'land_area','sum']
         aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
-    if query[1] == 'district':
-        #C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson')
+    if (query[1] == 'district' and query[0].lower() != 'all') or (query[1] == 'station' and query[0].lower() == 'all'):
+        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/stations.geojson')
         starting_zoom = 9
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
-    if query[1] == 'region':
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\districts.geojson')
-        starting_zoom = 6
+    if (query[1] == 'region' and query[0].lower() != 'all') or (query[1] == 'district' and query[0].lower() == 'all'):
+        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/districts.geojson')
+        starting_zoom = 5
+        fields = ['name', 'zone_type', 'sum']
+        aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
+    if (query[1] == 'region' and query[0].lower() == 'all'):
+        data = gpd.read_file('/Users/adityagupta/Documents/GitHub/WA-Crime/zones/regions.geojson')
+        starting_zoom = 5
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     data['name'] = data['name'].str.upper()
@@ -176,13 +180,16 @@ def choropleth(query):
     # geo_j = merged.to_json()
 
     # finding coordinates of starting location
-    loc = Nominatim(user_agent="GetLoc")
-    try:
-        getLoc = loc.geocode(query[0]+', WA, Australia')
-        starting_point = [getLoc.latitude, getLoc.longitude]
-    except: 
-    # starting location coordinates [lat, long] set to Perth if no coordinates found
-        starting_point = [-32, 116]
+    if query[0].lower() != 'all':
+        loc = Nominatim(user_agent="GetLoc")
+        try:
+            getLoc = loc.geocode(query[0]+', WA, Australia')
+            starting_point = [getLoc.latitude, getLoc.longitude]
+        except: 
+        # starting location coordinates [lat, long] set to Perth if no coordinates found
+            starting_point = [-32, 116]
+    else:
+        starting_point = [-25.32805556, 122.29833333]
     
     # creating a map object for choropleth map
     choropleth = folium.Map(
@@ -236,15 +243,18 @@ def choropleth(query):
     choropleth.keep_in_front(NIL)
     folium.LayerControl().add_to(choropleth)
 
-    folium.Marker(
-        location=starting_point, 
-        icon=folium.Icon(color="blue",icon="map-pin", prefix='fa'),
-        popup=folium.Popup(query[0].upper()),
-    ).add_to(choropleth)
+    if query[0].lower() != 'all' and query[1].lower() in ['suburb','station']:
+        folium.Marker(
+            location=starting_point, 
+            icon=folium.Icon(color="blue",icon="map-pin", prefix='fa'),
+            popup=folium.Popup(query[0].upper()),
+        ).add_to(choropleth)
 
-    with open(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\coordinates.json') as f:
-        coordinates = json.load(f)
-    coordinates = dict(coordinates)
+    print(type(anomalies))
+
+    # with open(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\coordinates.json') as f:
+    #     coordinates = json.load(f)
+    # coordinates = dict(coordinates)
 
     choropleth.save('generated_map.html')
     return plot
