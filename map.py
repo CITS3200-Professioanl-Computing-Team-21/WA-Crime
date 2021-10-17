@@ -1,3 +1,11 @@
+#import folium
+#from html2image import Html2Image
+#import matplotlib.pyplot as plt
+#m = folium.Map(location=[-31.9535132, 115.85704710000005], zoom_start=12)
+#m.save('test.html')
+#hti = Html2Image()
+#hti.screenshot(html_file='test.html', save_as='out.png')
+
 import os
 import csv
 import numpy as np
@@ -6,8 +14,9 @@ import geopandas as gpd
 import json
 #import folium
 #import seaborn as sns
-#import scipy as sp
-#import matplotlib.pyplot as plt
+import scipy as sp
+from scipy import stats
+import matplotlib.pyplot as plt
 #import boundaries
 
 def check_text(textfile):
@@ -17,7 +26,7 @@ def check_text(textfile):
     else:
         return True
 
-def file_prep(datafile, geojson, xlsx_csv, coordinates):
+#def file_prep(datafile, geojson, xlsx_csv, coordinates):
     #prepare csv file
     #consider if filling missing years & crimes is necessary for plotting & analysis
     with open(datafile, 'r') as file:
@@ -195,6 +204,7 @@ def churning_final(data, localities, years, distribution, selectors):
         q0 = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     output = output[output.columns[initial + q0]]
 
+    png = png_plots(output, selectors)
     #print(output)
 
     col_num = np.array(q0) - 3
@@ -202,8 +212,8 @@ def churning_final(data, localities, years, distribution, selectors):
     output['sum'] = output[col_list].sum(axis=1)
     output = output[output.columns[[0, 1, 2, -1]]]
     names_list = output['suburb'].drop_duplicates().sort_values().tolist()
-
-    #print(output)
+    
+    #print(output) 
 
     if selectors.offence != 'all':
         output = output.loc[output['website category names'] == selectors.offence]
@@ -223,21 +233,84 @@ def churning_final(data, localities, years, distribution, selectors):
 
     #print(result)
     
-    return result
+    return result, png
 
-def png_plots():
+def mini_churning(name_list, selectors, sum_list, data, localities, years, distribution):
+    for name in name_list:
+        selectors.name = name
+        temp_result, png = churning_final(data, localities, years, distribution, selectors)
+        sum_list.append(temp_result['sum'].sum())
+    result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
+    return result, png
+
+def png_plots(output, selectors):
     #time series analysis
     ##full range of 2010-21, or custom? no standardization tho...
-    png = []
+    #plot based on years if single location
+    #plot based on months if single year and location
+    #plot based on locations if station/district/region
+    ##remember to filter out crimes
+    col_list = list(output)
+    output = output.loc[output['website category names'] == selectors.offence]
+    output['sum'] = output[col_list].sum(axis=1)
+    #print(output)
+    if len(output['suburb'].drop_duplicates().sort_values().tolist()) > 1:
+        png, ax = plt.subplots(1, 2, tight_layout =True)
+        #plot by locations, screw histograms
+        #print(sum_list.T) #for histograms, but screw them
+        sum_list = output.groupby(['suburb'])['sum'].sum()
+        line_list = output.groupby(['suburb'])[col_list[-4:]].sum()
+        names_list = output['suburb'].drop_duplicates().sort_values().tolist()
+        ax[0].plot(line_list.T)
+        ax[0].legend(list(line_list.T))
+        ax[0].set_xlabel('hi')
+        ax[1].bar(names_list, sum_list)
+        ax[1].set_xticklabels(names_list, rotation=45)
+    elif len(output['suburb'].drop_duplicates().sort_values().tolist()) == 1:
+        png, ax = plt.subplots()
+        if len(output['year'].drop_duplicates().sort_values().tolist()) > 1:
+            #plot by year
+            sum_list = output.groupby(['year'])['sum'].sum()
+        elif len(output['year'].drop_duplicates().sort_values().tolist()) == 1:
+            #plot by month
+            output = output.drop(output.columns[[0, 1, 2]], axis = 1) 
+            sum_list = output.sum(axis=0)
+        ax.plot(sum_list)
+    #ax[1].xticks(rotation=90)
+    #plt.xticks(rotation=90)
+    png.savefig('test.png')
     return png
 
-def statistics(sums):
-    #mean, median, mode
-    ##standard deviation, standard error
-    ###binomial, poisson, normal distribution and analysis? significant or not?
-    stats = []
+#def useless():
+    #if year_range >= 5:
+    #    plot based on years
+    #elif year_range < 5:
+    #    if possible, highlight queried distributions????
+    #    plot based on months (up to 59 months)
 
-    return stats
+def statistics(sums):
+    #compile into list, eventually into masterclass
+    ### t-test and pvalues
+    num = len(sums)
+    sums = np.array(sums).astype(int)
+    mean = np.mean(sums)
+    #median = np.median(sums) #maybe useless due to instances of overwhelming 0s
+    #mode = stats.mode(sums) #maybe useless
+    var = np.var(sums)
+    #stddev = np.std(sums)
+    #stde = np.std(sums, ddof=1) / np.sqrt(np.size(sums))
+    std_dev = stats.tstd(sums) #sqrt(var)
+    std_e = stats.sem(sums) #sd/sqrt(n)
+    stat = [mean, var, std_dev, std_e]
+    #stats.ttest_1samp
+    #(calculated mean-sample value)/standard error
+    ##observed value being sum_counts, caluclated mean being query/sample mean
+    ##sed = (std(population)/sqrt(sample_count))
+    #If abs(t-statistic) <= critical value: Accept null hypothesis that the means are equal.
+    #If abs(t-statistic) > critical value: Reject the null hypothesis that the means are equal.
+    #If p > alpha: Accept null hypothesis that the means are equal.
+    #If p <= alpha: Reject null hypothesis that the means are equal.
+    return stat
 
 def main(query):
     #to ignore warning [[]], code will run as per normal
@@ -260,14 +333,10 @@ def main(query):
     #if check_text(coordinates) == None:
         return None
     #ignore gda and boundaries for now
-    #data, gda, localities, boundaries = file_prep(datafile, geojson, xlsx_csv, coordinates)
     data, localities = new_file_prep(datafile, xlsx_csv)
 
     #places, crimes, years, months, quarters = selector_options(data)
     places, types, suburb, station, district, region, crimes, years, distribution = selector_options_expanded(data, localities)
-
-    #maybe the function just runs through each new iteration of selectors when the selectors are changed on the UI
-    #make the function receive data instead of input data
 
     #when preparing the data, collect the queries in the selectors format first
     #after error-checking them, filter from data to get only the required localities
@@ -288,7 +357,6 @@ def main(query):
         print('locality failed')
         return None
     if (selectors.year.split('-')[0] + '-' + str(int(selectors.year.split('-')[0][2:]) + 1)) not in years:
-        print(selectors.year)
         print('year failed')
         return None
     if (selectors.distribution.split('-')[0]) not in distribution:
@@ -300,48 +368,48 @@ def main(query):
 
     if selectors.name != 'all':
         if selectors.locality == 'suburb' or selectors.locality == 'station':
-            result = churning_final(data, localities, years, distribution, selectors)
+            result, png = churning_final(data, localities, years, distribution, selectors)
         elif selectors.locality == 'district':
             name_data = localities.loc[localities[selectors.locality] == selectors.name]
             name_list = name_data['station'].drop_duplicates().sort_values().tolist()
             selectors.locality = 'station'
-            for name in name_list:
-                selectors.name = name
-                temp_result = churning_final(data, localities, years, distribution, selectors)
-                sum_list.append(temp_result['sum'].sum())
-            result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
+            result, png = mini_churning(name_list, selectors, sum_list, data, localities, years, distribution)
         elif selectors.locality == 'region':
             name_data = localities.loc[localities[selectors.locality] == selectors.name]
             name_list = name_data['district'].drop_duplicates().sort_values().tolist()
             selectors.locality = 'district'
-            for name in name_list:
-                selectors.name = name
-                temp_result = churning_final(data, localities, years, distribution, selectors)
-                sum_list.append(temp_result['sum'].sum())
-            result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
+            result, png = mini_churning(name_list, selectors, sum_list, data, localities, years, distribution)
     elif selectors.name == 'all':
         name_list = locals()[selectors.locality]
         name_list.remove('unknown')
         name_list.remove('all')
-        for name in name_list:
-            selectors.name = name
-            temp_result = churning_final(data, localities, years, distribution, selectors)
-            sum_list.append(temp_result['sum'].sum())
-        result = pd.DataFrame({'name': name_list, 'sum': list(sum_list)})
+        result, png = mini_churning(name_list, selectors, sum_list, data, localities, years, distribution)
 
-    print(result)
-    return result
+    plt.show()
+    stat = statistics(result['sum'].sort_values().tolist())
+    #print(stat)
+    return result, stat, png
 
     #return ****.html, statistical_info
 
 query1 = ['mandurah', 'station', '2011-18', 'sep-dec', 'robbery']
 main(query1)
-query2 = ['Rockingham', 'Station', '2018-19', 'Q1', 'Arson']
-main(query2)
-query3 = ['all', 'all', 'all-2018-19', 'all', 'all']
-main(query3)
-query4 = ['all', 'all', '2010-11-2015-16', 'all', 'all']
-main(query4)
+#query2 = ['mandurah', 'suburb', '2011-18', 'sep-dec', 'robbery']
+#main(query2)
+#query3 = ['mandurah', 'suburb', '2015-16', 'sep-dec', 'robbery']
+#main(query3)
+#query4 = ['mandurah', 'station', '2015-16', 'sep-dec', 'robbery']
+#main(query4)
+#query5 = ['mandurah', 'station', 'all', 'all', 'all']
+#main(query5)
+
+
+#query2 = ['Rockingham', 'Station', '2018-19', 'Q1', 'Arson']
+#main(query2)
+#query3 = ['all', 'all', 'all-2018-19', 'all', 'all']
+#main(query3)
+#query4 = ['all', 'all', '2010-11-2015-16', 'all', 'all']
+#main(query4)
 #if __name__ == '__main__':
  #   main()
 
