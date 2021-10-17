@@ -41,13 +41,15 @@ class MainWindow(QMainWindow,Ui_MainWindow):
         super(MainWindow,self).__init__()
         self.setupUi(self)
         self.browser = QWebEngineView()
-        self.browser.load(QtCore.QUrl.fromLocalFile("/default_map.html"))
+        self.browser.load(QtCore.QUrl.fromLocalFile("/generated_map.html"))
         hboxlayout = QHBoxLayout(self.frame)
         hboxlayout.addWidget(self.browser)
         
         # self.Search_pushButton.clicked.connect(self.query)                 # moved to ui.py
         self.Screenshot_pushButton.clicked.connect(self.screenshot)          # export button
+        self.cache_data = boundaries.choropleth(["all","region","all","all","all"])
         self.Summary_pushButton.clicked.connect(lambda : self.cache_data.getGraph())
+
         self.lineEdit.setPlaceholderText("Name,Zone_type,Year,Period,Crime") # search box prompt
         self.textEdit.setReadOnly(True)                                      # anomolies display
 

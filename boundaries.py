@@ -5,8 +5,6 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import haversine as hs
-import matplotlib.pyplot as plt
-import map as mp
 import filter as filter
 from fuzzywuzzy import process
 from shapely.geometry import Point, shape
@@ -146,9 +144,8 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
 
 def choropleth(query):
     #results, stat, png = mp.main(query)
-    #print(results)
-    #print(stat)
-    #plt.show(ax)
+    path = os.getcwd()
+
     results, anomalies, plot = filter.filter(query[0], query[1], query[2], query[3], query[4])
     results['name'] = results['name'].str.upper()
     results['log'] = np.log(results['sum']+1)
@@ -161,17 +158,17 @@ def choropleth(query):
         fields = ['name', 'postcode', 'land_area','sum']
         aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'district' and query[0].lower() != 'all') or (query[1] == 'station' and query[0].lower() == 'all'):
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\stations.geojson')
+        data = gpd.read_file(r'{}'.format(path + "\zones\stations.geojson"))
         starting_zoom = 9
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'region' and query[0].lower() != 'all') or (query[1] == 'district' and query[0].lower() == 'all'):
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\districts.geojson')
+        data = gpd.read_file(r'{}'.format(path + "\zones\districts.geojson"))
         starting_zoom = 5
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'region' and query[0].lower() == 'all'):
-        data = gpd.read_file(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\zones\regions.geojson')
+        data = gpd.read_file(r'{}'.format(path + "\zones" + "\\regions.geojson"))
         starting_zoom = 5
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
@@ -210,7 +207,7 @@ def choropleth(query):
         columns = ['name', 'log'], #Assign columns in the dataset for plotting
         key_on = 'feature.properties.name', #Assign the key that geojson uses to connect with dataset
         fill_color = 'YlOrRd',
-        fill_opacity = 0.9,
+        fill_opacity = 0.4,
         line_opacity = 0.5,
         bins = 9,
         legend_name = 'legend').add_to(choropleth)
@@ -245,22 +242,34 @@ def choropleth(query):
     choropleth.keep_in_front(NIL)
     folium.LayerControl().add_to(choropleth)
 
-    if query[0].lower() != 'all' and query[1].lower() in ['suburb','station']:
-        folium.Marker(
-            location=starting_point, 
-            icon=folium.Icon(color="blue",icon="map-pin", prefix='fa'),
-            popup=folium.Popup(query[0].upper()),
-        ).add_to(choropleth)
-
-    print(type(anomalies))
-
-    # # with open(r'C:\Users\User\OneDrive\Uni\CITS3200\WA-Crime\coordinates.json') as f:
-    # #     coordinates = json.load(f)
-    # # coordinates = dict(coordinates)
-    # coordinates = dir + "/coordinates.json"
-    # with open(r'{}'.format(coordinates)) as f:
-    #     coordinates = json.load(f)
-    # coordinates = dict(coordinates)
+    coordinates = path + "\coordinates.json"
+    with open(r'{}'.format(coordinates)) as f:
+        coordinates = json.load(f)
+    coordinates = dict(coordinates)
+    
+    if isinstance(anomalies, pd.DataFrame):
+        anomaly_locations = list(anomalies['name'].unique())
+        final_df =  anomalies[['name', 'year', 'observation', 'mean']]
+        final_df.rename(columns={'year': 'Year', 'observation': 'Observed Crime Numbers', 'mean': 'Mean Crime Numbers'}, inplace=True)
+        try:
+            for i in anomaly_locations:
+                location = coordinates[i.lower()]
+                html_df = final_df.loc[final_df['name'] == i]
+                html_df.index = np.arange(1, len(html_df) + 1)
+                html = html_df.to_html(classes=
+                    "table table-striped table-hover table-condensed table-responsive")
+            # iframe = folium.IFrame(html=html,
+            #        width=100,
+            #        height=100)
+                folium.Marker(
+                    location=location, 
+                    icon=folium.Icon(color="blue",icon="map-pin", prefix='fa'),
+                    popup=folium.Popup(html),
+                ).add_to(choropleth)
+        # except ValueError:
+        #     print('hi')
+        except:
+            print('hi')
 
     choropleth.save('generated_map.html')
     return plot
