@@ -5,13 +5,9 @@ import numpy as np
 import scipy as sp
 from scipy import stats
 
-# Desktop (windows) works for relative addresses for some reason, Mac doesn't
-# Desktop location: C:/Users/User/OneDrive/Uni/CITS3200/WA-Crime/data.db
-# Mac location /Users/blank/OneDrive/Uni/CITS3200/WA-Crime/data.db
-
 def filter(name, zone, year, mq, offence):
 
-    # Stupid inconsistency between files
+    # Make sure all inputs are lower case
     year = year.lower()
     if mq == 'All':
         mq = mq.lower()
@@ -81,15 +77,15 @@ def filter(name, zone, year, mq, offence):
     mrange = ""
     y1, y2 = 0, 0
 
+    # Construct month range for query. If 'all', defaults to jul-jun
     if str(mq).find('all') == -1:
-        # If it is a single month entry, i.e. no - found, mrange is just that one month
         mrange = str(distribution(mq))
     else:
         # We assume no more updates to the calendar system
         mq = "jul-jun"
         mrange = str(distribution(mq))
 
-    # If there is an 'all' type input assume all year range.
+    # Construct year range for query. If 'all', defaults to max year range
     if str(year).find('all') == -1:
         y1, y2 = yrange(year)
     else:
@@ -99,31 +95,31 @@ def filter(name, zone, year, mq, offence):
     if y1 > y2:
         y2, y1 = y1, y2
     
-    # Determines subordinate zone type for selection and grouping (This feature may be made redundant in the future in favour of a custom zone selection)
+    # Determines subordinate zone type for selection and grouping
     zones = ['suburb', 'station', 'district', 'region']
     sub_zone = ""
 
-    # When name is 'all', we return all of that zone type, therefore no subzones. When name is not all, we return only the named zone and it's subzones. If zone is suburb, we return the station that named suburb belongs to.
+    # When name is 'all', we return all of that zone type, therefore no subzones. When name is not all, we return only the named zone and it's subzones. 
+    # If zone is suburb and named, we return the station that named suburb belongs to.
     if name != 'all':
-        # A named suburb should instead return the station and its suburbs that the named suburb belongs to. Only 'all' type query should ever return the entire map.
         if zone == 'suburb':
             sub_zone = 'suburb'
             zone = 'station'
             get_station = "SELECT station FROM Localities WHERE suburb = '" + name + "'"
             c.execute(get_station)
             name = c.fetchone()[0]
-
         else:
             sub_zone = zones[zones.index(zone) - 1]
     else:
         sub_zone = zone
 
-
+    # Sum across every month for 'total' column, used for unfiltered data
     allmonth = "SUM(jul) + SUM(aug) + SUM(sep) + SUM(oct) + SUM(nov) + SUM(dec) + SUM(jan) + SUM(feb) + SUM(mar) + SUM(apr) + SUM(may) + SUM(jun)"
 
-    # We only show every month if we have a narrow year search less than 4 years, otherwise show overall year trends
+    # Default unfiltered data query
     query0 += "CREATE TEMPORARY TABLE unfiltered AS SELECT Localities." + sub_zone + ", year_fn, SUM(jul) as jul, SUM(aug) as aug, SUM(sep) as sep, SUM(oct) as oct, SUM(nov) as nov, SUM(dec) as dec, SUM(jan) as jan, SUM(feb) as feb, SUM(mar) as mar, SUM(apr) as apr, SUM(may) as may, SUM(jun) as jun, " + allmonth + " as total FROM (Crime LEFT OUTER JOIN Localities ON Crime.suburb = Localities.suburb)"
 
+    # Construction of unfiltered data query
     if name != 'all' or offence != 'all' or year != 'all':
         query0 += " WHERE"
         # includeand to check if query has multiple conditions, so that "AND" can be appended to include them
@@ -142,17 +138,15 @@ def filter(name, zone, year, mq, offence):
             query0 += " year_fn >= " + y1 + " AND year_fn < " + y2
     query0 += " GROUP BY Localities." + sub_zone + ", year_fn"
     
-    # Print output to command line
+    # Run query to make temp unfiltered table, then get unfiltered data. 
     c.execute(query0)
-    
-    # Select from temp table
     c.execute("SELECT * FROM unfiltered")
     j = 0
     unfiltered = []
     for i in c.fetchall():
         unfiltered.append(list(i))
         j += 1
-
+    # Convert to pandas frame
     unfiltered = convert(unfiltered, ["name", "year_fn", "jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun", "total"])
 
     # Following is to apply final filters to data
@@ -169,17 +163,21 @@ def filter(name, zone, year, mq, offence):
         j += 1
     filtered = convert(filtered, ["name", "sum"])
 
+
+    # Calculate data anomalies
     anomalies = statistics(filtered, unfiltered, mrange)
 
+    # Build data object that holds textual anomaly information, and graph information
     data = statobject(anomalies, offence, unfiltered, mrange)
 
+    # Convert to pandas frame to be used in UI
     if anomalies != []:
         anomalies = convert(anomalies, ["name", "year", "mean", "std_e", "observation", "p-value"])
 
     # Returns the filtered data to make heatmap, anomaly information, and data object holding textual anomaly information and graph
     return filtered, anomalies, data
 
-
+# Function for calculating anomalies
 def statistics(filtered, unfiltered, mrange):
     name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
     year_list = unfiltered['year_fn'].drop_duplicates().sort_values().tolist()
@@ -189,9 +187,10 @@ def statistics(filtered, unfiltered, mrange):
     elif '+' in mrange:
         temp2 = unfiltered[mrange[1:-1].split('+')]
     dataframe = pandas.concat([temp1, temp2], axis=1)
-
     temp = []
     anomalies = []
+
+    # Anomalies are calculated across years when multiple year range is given
     if len(year_list) > 1:
         for a in range(len(name_list)):
             values = dataframe.loc[dataframe['name'] == name_list[a]]
@@ -223,18 +222,18 @@ def statistics(filtered, unfiltered, mrange):
             # If no std_d, can't determine p value, so skip
             if std_d == 0.0:
                 continue
-            # result = stats.ttest_1samp(total, mean)
             # Where k is an array that represents the sample
             count = 0
             for k in extracted_values:
                 z_value = (sum(k)-mean)/(std_d)
                 p_value = stats.norm.sf(abs(z_value))
                 temp.append([name_list[a], year_list[count], mean, std_d, sum(k), p_value])
-                count += 1
-            
+                count += 1  
         for i in temp:
             if i[-1] < 0.05:
                 anomalies.append(i)
+
+    # Singular years calculate anomalies based on month range
     elif len(year_list) <= 1:
         for a in range(len(name_list)):
             z_value = []
@@ -264,9 +263,8 @@ def statistics(filtered, unfiltered, mrange):
     
     return anomalies
 
+#Collects the months whose data are to be summed, scans from m0 to m1 collecting months in between.
 def distribution(mq):
-    # Collects the months whose data are to be summed, scans from m0 to m1 collecting
-    # months in between.
     months = ["jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun"]
     query = ""
     if mq != 'all':
@@ -295,12 +293,10 @@ def distribution(mq):
             curr = m0
             while curr != m1:
                 mrange += curr + "+"
-                # If Sep-Aug we modulo past Dec until we reach Aug
                 mi = (mi + 1) % 12
                 curr = months[mi]
             # Closes the range with bracket
             mrange += curr + ')'
-            # print(mrange)
             return mrange
         else:
             # Assuming no months will ever start with Q
@@ -311,7 +307,6 @@ def distribution(mq):
                 end = months[int(mq[0][1])*3-1]
                 while start != end:
                     mrange += start + "+"
-                    # If Sep-Aug we modulo past Dec until we reach Aug
                     mi = (mi + 1) % 12
                     start = months[mi]
                 mrange += start + ')'
@@ -319,13 +314,12 @@ def distribution(mq):
             else:
                 return mq[0]
 
-
-# May be buggy for weird inputs like 'all-2013-2014' or '2013-2014-all' or 'all-all'
 def yrange(year):
     y = year.split('-')
-    # Stupid selector input difference has me doing this stupidness. Format for end year 2021 is '21', so I need to infer the century and add 21 to it to get the year I want '2021'
+    # Formatting required to determine the ending year
     return y[0], str(int(int(y[-2])/100)) + y[-1]
 
+# Create database connection
 def create_connection(db_file):
     conn = None
     try:
@@ -352,7 +346,6 @@ def create_table(c, create_table_sql, table):
         print("Create table error")
         return None
 
-# This shit isn't working for some reason. NOW IT IS
 def fill_table(c, file_name, table):
     try:
         with open(file_name, 'r') as f:
@@ -375,6 +368,7 @@ def convert(list, cols):
     df = pandas.DataFrame(list, columns = cols)
     return df
 
+# Data object to hold information returned to application
 class statobject:
     def __init__(self, anomalydata, offence, unfiltered, mrange):
         # Text to be displayed in panel 1 summarised anomalies.
@@ -389,8 +383,8 @@ class statobject:
     def getText(self):
         return self.anomalies_text
 
+# Function to draw time series or bar charts for query
 def graph(unfiltered, mrange):
-    # name_list = unfiltered['name'].drop_duplicates().sort_values().tolist()
     year_list = unfiltered['year_fn'].drop_duplicates().sort_values().tolist()
     temp1 = unfiltered[unfiltered.columns[[0,1]]]
     if '+' not in mrange:
@@ -401,7 +395,9 @@ def graph(unfiltered, mrange):
 
     sorted = unfiltered.sort_values(by=['total'], ascending=False)
     name_list = sorted['name'].drop_duplicates().tolist()
+    bar_names = unfiltered['name'].drop_duplicates().tolist()
 
+    # If more than 5 years, we plot years along time series
     if len(year_list) > 5:
         limit = 5
         if len(name_list) < limit:
@@ -413,22 +409,21 @@ def graph(unfiltered, mrange):
                 # i -= 1 
                 continue
             extracted_values = values[values.columns[-1:]].values.tolist()
-            # if len(extracted_values) == 60:
-            #     e = 4
             plot_values = []
             for i in extracted_values:
                 plot_values += i
-            # print(mrange)
             plt.plot(data_years, plot_values, marker='o')
         plt.legend(name_list)
         plt.xticks(rotation=45)
         plt.xlabel('Years/Months Distribution')
         plt.ylabel('Crime Counts')
+    # Less than or equal to 5 years we plot months over those years
     elif len(year_list) <= 5:
 
+        # If a singular month and only one year featured, plot bar graph instead
         if '+' not in mrange and len(year_list) <= 1:
             temp = dataframe.groupby('name')[mrange].sum()
-            plt.bar(name_list, list(temp))
+            plt.bar(bar_names, list(temp))
             plt.xticks(rotation=45)
             plt.xlabel('Locations')
             plt.ylabel('Crime Counts')
@@ -442,7 +437,6 @@ def graph(unfiltered, mrange):
                 extracted_values = values[values.columns[2:]].values.tolist()
                 data_years = values[values.columns[1]].values.tolist()
                 if len(data_years) != len(year_list):
-                    # i -= 1 
                     continue
                 plot_values = []
                 for i in extracted_values:
@@ -463,13 +457,13 @@ def graph(unfiltered, mrange):
 
     plt.show()
 
+# Generates textual information for anomalies
 def text(anomalydata, offence):
     if offence == "all":
         offence = "crime"
     text = ""
 
     text += "ORDERED BY LOCATION:\n\n"
-    # By place name
     for i in range(len(anomalydata)):
         period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
         percent = abs(anomalydata[i][4]-anomalydata[i][2])/anomalydata[i][2]
@@ -485,28 +479,10 @@ def text(anomalydata, offence):
 
     return text
 
+# Sorting method for dates
 def year(anom):
     if type(anom[1]) is int:
         return anom[1]
     else:
         months = ["jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun"]
         return months.index(anom[1])
-
-# 2018 kings park had 30% higher stealing than average
-
-
-# Name, zone, year, month/quarter, crime
-# filter('mandurah', 'station', 'all', 'all', 'all') 
-# filter('perth', 'station', 'all', 'all', 'all') 
-filter('albany', 'station', 'all', 'all', 'all') 
-# filter('perth', 'station', '2015-16-2019-20', 'jul-oct', 'stealing') # <5 years
-# filter('perth', 'station', '2014-15-2019-20', 'jul-oct', 'stealing') # >5 years
-# filter('perth', 'station', '2014-15', 'jul-oct', 'stealing') # 1 year
-# filter('perth', 'station', '2014-15', 'jul', 'stealing') #1 year, 1 month
-# filter('perth', 'station', '2014-15-2019-20', 'jul', 'stealing') # <5ysears, 1 month, fix
-# filter('perth', 'station', '2015-16-2019-20', 'jul', 'stealing') # >5years, 1 month, fix
-# filter('nedlands', 'suburb', '2016-17-2019-20', 'mar-aug', 'drug offences')
-# filter('gabingullup', 'suburb', '2013-14-2019-20', 'dec-jul', 'all')
-
-
-#perth district = 92571, wembley station = 34120
