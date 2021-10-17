@@ -468,7 +468,7 @@ def text(anomalydata, offence):
         offence = "crime"
     text = ""
 
-    text += "By place name:\n\n"
+    text += "ORDERED BY LOCATION:\n\n"
     # By place name
     for i in range(len(anomalydata)):
         period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
@@ -476,7 +476,7 @@ def text(anomalydata, offence):
         text += name + " (" + period + ")" " had " + str(round(percent*100, 2)) + "% " + change + " " + offence + " than average\n\n"
     
     anomalydata.sort(key=year, reverse=True)
-    text += "\n\nBy date (latest):\n\n"
+    text += "\n\nORDERED BY DATE:\n\n"
 
     for i in range(len(anomalydata)):
         period, name, change = str(anomalydata[i][1]), anomalydata[i][0], "higher" if anomalydata[i][4] > anomalydata[i][2] else "lower"
