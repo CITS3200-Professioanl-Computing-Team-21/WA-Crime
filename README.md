@@ -31,10 +31,12 @@ v 1.0\
 # WA crime front-end branch
 # Nat and Bo
 
-# Folders
+# Files
 config -> csv for selector dropdown options\
-tools -> supporting applications\
-depre -> past versions of application
+images -> images used in style sheet\
+app.py -> runs main application, contains main application logic
+UI_3.5.ui -> file used by PyQt5 designer to generate ui.py
+ui.py -> modified version of the generated file, containing style sheets
 
 # Features
 - Direct search via query
@@ -43,11 +45,23 @@ Selectors based on selector2.doc, adjustable via ./config csv
 - Zone selectors for Suburb, Station, District, Region
 - Time selectors Year, Month, Quarter
 - Crime selector
-- Selectors respond to other selected options
 
 # Versions
-v 3.1 (integration patch)\
+v 4.0 (final version)
+- UI stylesheet added
+- Functionailities for textual and graphical display of anomolies
+- Threaded backend map generation for client responsiveness
+Note: ui.py is now a modified version from the base generated UI3.5.ui\
+
+v 3.1 (integration patch)
 - Changed config/ .csv to be consistent with back end
+- Query is now comma deliminated
+- Error checking logic for period selectors
+- Selectors respond to other selected options
+- Query search error checking
+- Prompt format for query search
+- Dropdown query copied into query search box for copy/edit
+- Error messages for search box query
 
 v 3.0 (implemented functionailities of v2.5 and variable name changes in .ui)\
 Features: functional features of v2.0, updated to fit selector2.doc, removed adjustable font, added placeholders for anomaly display
@@ -78,13 +92,6 @@ Features: basic draft of possible UI mockup for client meeting
 - application.ui -> file used by PyQT designer
 - application.py -> working file with UI functionailities (run this on for the application)
 
-v 0.5\
+v 0.5
 - Jup_selectors.ipynb -> Html generation using selectors in Jupyter
 - PyQt html display.py -> input folium html file, displayed in PyQt application
-
-# HTML files used for testing
-districts.html\
-regions.html\
-stations.html\
-testlayer.html\
-testpin.html\
