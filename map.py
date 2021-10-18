@@ -1,3 +1,5 @@
+# LEGACY CODE USING PANDAS TO FILTER CSV
+
 import os
 import csv
 import numpy as np
