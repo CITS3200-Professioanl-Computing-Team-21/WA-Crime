@@ -202,8 +202,10 @@ def choropleth(query):
         fields = ['name', 'postcode', 'land_area','sum']
         aliases = ['Name', 'Postcode', 'Land Area', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'district' and query[0].lower() != 'all') or (query[1] == 'station' and query[0].lower() == 'all'):
+        if query[1] == 'station' and query[0].lower() == 'all':
+            starting_zoom = 5
+        else: starting_zoom = 9
         data = gpd.read_file(path + '/zones/stations.geojson')
-        starting_zoom = 9
         fields = ['name', 'zone_type', 'sum']
         aliases = ['Name', 'Zone Type', query[-1].upper()+' Crime Frequency']
     if (query[1] == 'region' and query[0].lower() != 'all') or (query[1] == 'district' and query[0].lower() == 'all'):
