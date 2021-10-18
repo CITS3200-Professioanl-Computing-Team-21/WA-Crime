@@ -375,7 +375,6 @@ class statobject:
         self.anomalies_text = ""
         self.unfiltered = unfiltered
         self.mrange = mrange
-        # print(anomalydata)
         if anomalydata != []:
             self.anomalies_text = text(anomalydata, offence)
     def getGraph(self):
@@ -486,3 +485,5 @@ def year(anom):
     else:
         months = ["jul", "aug", "sep", "oct", "nov", "dec", "jan", "feb", "mar", "apr", "may", "jun"]
         return months.index(anom[1])
+
+filter("regional wa region", "region", "all", "all", "all")
