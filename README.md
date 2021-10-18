@@ -6,6 +6,9 @@ config -> csv for selector dropdown options\
 images -> images used in style sheet\
 tools -> supporting applications\
 depre -> past versions of application
+app.py -> runs main application, contains main application logic
+UI_3.5.ui -> file used by PyQt5 designer to generate ui.py
+ui.py -> modified generated file, containing style sheets
 
 # Features
 - Direct search via query
@@ -16,7 +19,7 @@ Selectors based on selector2.doc, adjustable via ./config csv
 - Crime selector
 
 # Versions
-v 4.0 (Final version)
+v 4.0 (final version)
 - UI stylesheet added
 - Functionailities for textual and graphical display of anomolies
 - Threaded backend map generation for client responsiveness
@@ -70,4 +73,4 @@ districts.html\
 regions.html\
 stations.html\
 testlayer.html\
-testpin.html\
+testpin.html
