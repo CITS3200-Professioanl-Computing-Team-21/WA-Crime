@@ -174,6 +174,8 @@ def zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_l
     return(final_data)
 
 def choropleth(query):
+    if query[0][-1] == '\n':
+        query[0] = query[0][:-1]
     #results, stat, png = mp.main(query)
     path = os.getcwd()
     COORDINATES = path + "/centroids/coordinates.json"
@@ -339,7 +341,7 @@ def main():
     # missing_landgate = missing_locations(zones_data, zones, missing2)
     # changes = assign_missing_boundaries(missing_landgate, landgate_data, changes, crime_locations)
     # final_data = zoning_boundaries(changes, landgate_data, zones, crime_locations, landgate_locations, zones_data)
-    choropleth(query)
+    choropleth(["regional wa region", "region", "all", "all", "all"])
     # return final_data
 
 if __name__ == '__main__':
