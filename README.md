@@ -1,3 +1,29 @@
+# Getting started
+# Program is running under conda enviornment
+
+1. Creating a new geo_env 
+   conda create -n geo_env
+   conda activate geo_env
+   conda config --env --add channels conda-forge
+   conda config --env --set channel_priority strict
+   conda install python=3 geopandas
+   
+2. Under conda virtual enviornment install dependencies
+   Use "conda install or conda install -c conda-forge {package}" to install following dependencies
+   1.Folium
+   2.Geopandas
+   3.PyQt
+   4.Geojson
+   5.Geopy
+   
+   - Not necessary but maybe needed
+     Fuzzywuzzy
+     Haversine
+     
+3. Then in conda-evn
+   run --python app.py
+
+
 # WA Crime back-end branch
 # Sean, Aditya, Zak
 
