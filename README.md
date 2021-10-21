@@ -19,9 +19,17 @@
 - Geopy
 
 
-# run
+# Run
 Then in conda-evn
 run --python app.py
+
+# Compile the Srouce Code with Pyinstaller
+-Note: The Version of PyQtWebEngine must be 5.12.1 and make sure the code can run successfully in the local environment 
+-run pyinstaller -w -i ico.ico HeatMap.py
+-Errors please refer to website 
+1. Geopanda failures https://stackoverflow.com/questions/56804095/pyinstaller-stopiteration-error-when-i-import-geopandas
+2. Folium failures https://stackoverflow.com/questions/54836440/branca-python-module-is-unable-to-find-2-essential-json-files-when-running-an-ex
+3. Iteration issues https://stackoverflow.com/questions/38977929/pyinstaller-creating-exe-runtimeerror-maximum-recursion-depth-exceeded-while-ca
 
 
 # WA Crime back-end branch
