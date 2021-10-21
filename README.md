@@ -1,7 +1,7 @@
 # Getting started
 # Program is running under conda enviornment
 
-# Install geopandas
+- Install geopandas
 1. Creating a new geo_env 
 2. conda create -n geo_env
 3. conda activate geo_env
@@ -9,19 +9,17 @@
 5. conda config --env --set channel_priority strict
 6. conda install python=3 geopandas
 
-# Install dependencies
-Under conda virtual enviornment install dependencies
-1. Use "conda install or conda install -c conda-forge {package}" to install following dependencies
-Folium
-Geopandas
-PyQt
-Geojson
-Geopy
-   
-# Dependecies not necessary but maybe needed
-Fuzzywuzzy
-Haversine
+- Install dependencies
+1. Under conda virtual enviornment install dependencies
+2. Use "conda install or conda install -c conda-forge {package}" to install following dependencies 
+- Folium
+- Geopandas
+- PyQt
+- Geojson
+- Geopy
 
+
+# run
 Then in conda-evn
 run --python app.py
 
